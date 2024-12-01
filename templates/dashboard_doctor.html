@@ -84,7 +84,7 @@
                 {% if appointments %}
                     {% for appt in appointments %}
                         <li>
-                            <a href="{{ url_for('profile', username=patients[appt.patient].name) }}">
+                            <a href="{{ url_for('profile', username=appt.patient) }}">
                                 Appointment with {{ patients[appt.patient].name }} on {{ appt.date }} at {{ appt.time }}
                             </a>
                             <div class="patient-details">
@@ -100,6 +100,31 @@
         </div>
 
         <a href="{{ url_for('index') }}" class="back-button">Back to Home</a>
+        <table>
+            <thead>
+                <tr>
+                    <th>Patient</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appointment in appointments %}
+                <tr>
+                    <td>{{ patients[appointment.patient].name }}</td>
+                    <td>{{ appointment.date }}</td>
+                    <td>{{ appointment.time }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('finish_appointment', appointment_id=loop.index) }}">
+                            <button type="submit" class="btn btn-success">Finish</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
     </div>
 </body>
 </html>

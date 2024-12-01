@@ -44,6 +44,9 @@ def not_found(error):
 def profile(username):
     # Look up the patient by username in the patients dictionary
     user = patients.get(username)
+    
+    nurses = {username: user for username, user in users.items() if user.get('role') == 'head_nurse'} or {}
+
 
     # If the patient is not found, flash an error and redirect
     if not user:
@@ -51,7 +54,7 @@ def profile(username):
         return redirect(url_for('index'))
 
     # Render the profile page, passing the user (specific patient)
-    return render_template('patient_profile.html', user=user)
+    return render_template('patient_profile.html', user=user, doctors=doctors,nurses=nurses)
 
 
 
@@ -105,7 +108,6 @@ def dashboard():
         appointments=appointments,
         nurses=nurses
     )
-
 
     elif role == 'doctor':
         doctor = doctors.get(username)
@@ -324,6 +326,40 @@ def manage_nurses():
         return redirect(url_for('dashboard'))
     
     return render_template('manage_nurses.html', nurses=nurses)
+
+@app.route('/finish_appointment/<int:appointment_id>', methods=['POST'])
+def finish_appointment(appointment_id):
+    # Ensure that the logged-in user is a doctor
+    username = session.get('username')
+    role = session.get('role')
+    if role != 'doctor':
+        flash('Only doctors can finish appointments.')
+        return redirect(url_for('dashboard'))
+
+    # Check if the appointment exists
+    appointment = appointments.get(appointment_id)
+    if not appointment:
+        flash(f'Appointment with ID {appointment_id} not found!')
+        return redirect(url_for('dashboard'))
+
+    # Check if the doctor is handling this appointment
+    if appointment['doctor'] != username:
+        flash('You are not authorized to finish this appointment.')
+        return redirect(url_for('dashboard'))
+
+    # Remove the appointment from the global appointments dictionary
+    del appointments[appointment_id]
+
+    # Remove the appointment from the patient's record
+    patient_username = appointment['patient']
+    if patient_username in patients:
+        patient_appointments = patients[patient_username].get('appointments', [])
+        patients[patient_username]['appointments'] = [
+            appt for appt in patient_appointments if appt.get('id') != appointment_id
+        ]
+
+    flash(f'Appointment with {patients[patient_username]["name"]} on {appointment["date"]} at {appointment["time"]} has been finished.')
+    return redirect(url_for('dashboard'))
 
 # Run the app
 if __name__ == '__main__':

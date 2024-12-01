@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ doctor.name }}'s Profile</title>
+</head>
+<body>
+    <h1>{{ doctor.name }}'s Profile</h1>
+
+    <p>Username: {{ doctor.username }}</p>
+    <p>Specialty: {{ doctor.specialty }}</p>
+
+    <h3>Appointments:</h3>
+    <ul>
+        {% for appointment in appointments %}
+        <li>Patient: {{ appointment.patient }} | Date: {{ appointment.date }} | Time: {{ appointment.time }}</li>
+        {% else %}
+        <li>No appointments scheduled.</li>
+        {% endfor %}
+    </ul>
+
+    <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+</body>
+</html>
