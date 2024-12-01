@@ -124,7 +124,39 @@
             </table>
             <a href="{{ url_for('add_doctor') }}" class="back-button">Add New Doctor</a>
         </div>
+        <h2>Manage Head Nurses</h2>
 
+        <!-- Add Head Nurse Form -->
+        <form method="POST" action="{{ url_for('manage_nurses') }}">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+            
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+            
+            <label for="specialty">Specialty:</label>
+            <input type="text" id="specialty" name="specialty" required>
+            
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+            
+            <button type="submit">Add Head Nurse</button>
+        </form>
+        
+        <h2>Head Nurses</h2>
+<ul>
+    {% for username, nurse in nurses.items() %}
+        <li>{{ nurse.name }} - {{ username }}
+            <form method="post" action="{{ url_for('delete_nurse', username=username) }}">
+                <button type="submit">Delete</button>
+            </form>
+        </li>
+    {% else %}
+        <p>No head nurses found.</p>
+    {% endfor %}
+</ul>
+
+        
         <!-- Section to manage patients -->
         <div class="card">
             <h2>Manage Patients</h2>
@@ -144,7 +176,7 @@
                             <td>{{ patient.age }}</td>
                             <td>{{ patient.gender }}</td>
                             <td>
-                                <a href="{{ url_for('profile', username=username) }}">View</a> |
+                                <a href="{{ url_for('profile', username=user.username) }}">View Profile</a>
                                 <a href="{{ url_for('edit_patient', username=username) }}">Edit</a> |
                                 <form action="{{ url_for('delete_patient', username=username) }}" method="POST" style="display:inline;">
                                     <button type="submit" style="color: red; background: none; border: none; cursor: pointer;">Delete</button>

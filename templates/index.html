@@ -3,13 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hospital Management</title>
+    <title>Hospital Management System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        header {
+            background-color: #007bff;
+            color: white;
+            width: 100%;
+            padding: 1rem 0;
+            text-align: center;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        main {
+            max-width: 800px;
+            padding: 2rem;
+            text-align: center;
+        }
+        a {
+            display: inline-block;
+            margin: 0.5rem;
+            padding: 0.7rem 1.2rem;
+            text-decoration: none;
+            color: white;
+            background-color: #007bff;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        a:hover {
+            background-color: #0056b3;
+        }
+        footer {
+            margin-top: auto;
+            background-color: #333;
+            color: white;
+            width: 100%;
+            text-align: center;
+            padding: 1rem 0;
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to Hospital Management System</h1>
-    <a href="{{ url_for('login') }}">Login</a>
-    <a href="{{ url_for('register_patient') }}">Register Patient</a>
-    <a href="{{ url_for('add_doctor') }}">Add Doctor</a>
-    <a href="{{ url_for('schedule_appointment') }}">Schedule Appointment</a>
+    <header>
+        <h1>Welcome to the Hospital Management System</h1>
+    </header>
+    <main>
+        {% if username %}
+            <p>Hello, <strong>{{ username }}</strong>!</p>
+            <p>You are logged in as a <strong>{{ role.replace('_', ' ').capitalize() }}</strong>.</p>
+
+            {% if role == 'admin' %}
+                <a href="{{ url_for('dashboard') }}">Admin Dashboard</a>
+                <a href="{{ url_for('register_patient') }}">Register Patient</a>
+                <a href="{{ url_for('add_doctor') }}">Add Doctor</a>
+                <a href="{{ url_for('manage_nurses') }}">Manage Nurses</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+
+            {% elif role == 'doctor' %}
+                <a href="{{ url_for('dashboard') }}">Doctor Dashboard</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+
+            {% elif role == 'patient' %}
+                <a href="{{ url_for('dashboard') }}">Patient Dashboard</a>
+                <a href="{{ url_for('schedule_appointment') }}">Schedule Appointment</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+
+            {% elif role == 'head_nurse' %}
+                <a href="{{ url_for('dashboard') }}">Head Nurse Dashboard</a>
+                <a href="{{ url_for('manage_nurses') }}">Manage Nurses</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+
+            {% else %}
+                <p>Unknown role: <strong>{{ role }}</strong></p>
+            {% endif %}
+        {% else %}
+            <p>Please log in to access the Hospital Management System.</p>
+            <a href="{{ url_for('login') }}">Login</a>
+        {% endif %}
+    </main>
+    <footer>
+        <p>&copy; {{ current_year }} Hospital Management System</p>
+    </footer>
 </body>
 </html>

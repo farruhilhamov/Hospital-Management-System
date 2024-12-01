@@ -1,20 +1,24 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 # Sample data
 users = {
     "admin": {"password": generate_password_hash("admin123"), "role": "admin"},
     "doctor1": {"password": generate_password_hash("doctor123"), "role": "doctor"},
-    "patient1": {"password": generate_password_hash("patient123"), "role": "patient"}
+    "patient1": {"password": generate_password_hash("patient123"), "role": "patient"},
+    "headnurse1":{"password": generate_password_hash("nurse123"), "role": "head_nurse"}
 }
 
 patients = {
-    "patient1": {"name": "John Doe", "age": 30, "gender": "Male", "appointments": []}
+    "patient1": {"name": "John", "age": 30, "gender": "Male", "appointments": []}
 }
 
 doctors = {
     "doctor1": {"name": "Dr. Smith", "specialty": "Cardiology"}
 }
+
+nurses = {username: user for username, user in users.items() if user.get('role') == 'head_nurse'} or {}
 
 appointments = {}
 
@@ -24,16 +28,32 @@ app.secret_key = "supersecretkey"
 # Home page route
 @app.route('/')
 def index():
-    return render_template('index.html')
+    current_year = datetime.now().year
+    username = session.get('username', None)
+    role = session.get('role', None)
+    return render_template('index.html', username=username, role=role, current_year=current_year)
 
-# User profile page route
+
+@app.errorhandler(404)
+def not_found(error):
+    flash('The requested resource was not found.')
+    return redirect(url_for('dashboard'))
+
+
 @app.route('/user/<username>')
 def profile(username):
+    # Look up the patient by username in the patients dictionary
     user = patients.get(username)
+
+    # If the patient is not found, flash an error and redirect
     if not user:
         flash(f'User {username} not found!')
         return redirect(url_for('index'))
+
+    # Render the profile page, passing the user (specific patient)
     return render_template('patient_profile.html', user=user)
+
+
 
 # Login route
 @app.route('/login', methods=['GET', 'POST'])
@@ -54,6 +74,13 @@ def login():
             error = 'Invalid username/password'
     return render_template('login.html', error=error)
 
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('You have been logged out.')
+    return redirect(url_for('index'))
+
+
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     username = session.get('username')
@@ -70,11 +97,15 @@ def dashboard():
     }
 
     if role == 'admin':
+        nurses = {username: user for username, user in users.items() if user.get('role') == 'head_nurse'}
         return render_template(
-        'dashboard_admin.html', 
-        patients=patients, 
-        doctors=doctors, 
-        appointments=appointments)
+        'dashboard_admin.html',
+        patients=patients,
+        doctors=doctors,
+        appointments=appointments,
+        nurses=nurses
+    )
+
 
     elif role == 'doctor':
         doctor = doctors.get(username)
@@ -84,6 +115,8 @@ def dashboard():
         patient = patients.get(username)
         patient_appointments = patient.get("appointments", [])
         return render_template('dashboard_patient.html', **context, patient=patient, appointments=patient_appointments)
+    elif role == 'head_nurse':
+        return render_template('dashboard_head_nurse.html', **context, appointments=appointments)
 
 # Patient registration route
 @app.route('/register_patient', methods=['GET', 'POST'])
@@ -138,19 +171,19 @@ def schedule_appointment():
         date = request.form['date']
         time = request.form['time']
 
-        # Validate doctor and patient existence
+        # Validate doctor existence
         if doctor_username not in doctors:
             flash('Doctor not found!')
             return redirect(url_for('schedule_appointment'))
 
-        # Check for conflicting appointment
+        # Check for conflicting appointment (same doctor, same date, same time)
         for appt in appointments.values():
             if appt['doctor'] == doctor_username and appt['date'] == date and appt['time'] == time:
                 flash(f'The doctor is already booked at {time} on {date}. Please choose another time.')
                 return redirect(url_for('schedule_appointment'))
 
         # Create the appointment
-        appointment_id = len(appointments) + 1
+        appointment_id = len(appointments) + 1  # Generate a new appointment ID
         appointment = {
             'patient': patient_username,
             'doctor': doctor_username,
@@ -158,10 +191,10 @@ def schedule_appointment():
             'time': time
         }
 
-        # Store the appointment
+        # Store the appointment in the appointments dictionary
         appointments[appointment_id] = appointment
 
-        # Optionally, you can also add the appointment to the patient's own list of appointments
+        # Optionally, add the appointment to the patient's list of appointments
         if 'appointments' not in patients[patient_username]:
             patients[patient_username]['appointments'] = []
         patients[patient_username]['appointments'].append(appointments[appointment_id])
@@ -169,7 +202,9 @@ def schedule_appointment():
         # Flash a success message
         flash(f'Appointment successfully scheduled with Dr. {doctors[doctor_username]["name"]} on {date} at {time}')
         
+        # Redirect back to the dashboard
         return redirect(url_for('dashboard'))
+
 
     # If it's a GET request, render the scheduling form
     return render_template('schedule_appointment.html', doctors=doctors, patients=patients)
@@ -239,6 +274,56 @@ def delete_patient(username):
     # Redirect back to the dashboard
     return redirect(url_for('dashboard'))
 
+# Route to manage nurses (admin-only)
+# Add Nurse Route
+@app.route('/add_nurse', methods=['POST'])
+def add_nurse():
+    if session.get('role') != 'admin':
+        flash('Only administrators can manage nurses.')
+        return redirect(url_for('dashboard'))
+
+    username = request.form['username']
+    name = request.form['name']
+    specialty = request.form.get('specialty', '')
+    password = request.form['password']
+
+    # Check if the username already exists
+    if username in users:
+        flash(f'Username {username} already exists!')
+        return redirect(url_for('manage_nurses'))
+
+    # Add the new nurse
+    users[username] = {"password": generate_password_hash(password), "role": "head_nurse"}
+    nurses[username] = {"name": name, "specialty": specialty, "role": "head_nurse"}
+    flash(f'Head Nurse {name} added successfully!')
+    return redirect(url_for('manage_nurses'))
+
+# Delete Nurse Route
+@app.route('/delete_nurse/<username>', methods=['POST'])
+def delete_nurse(username):
+    if session.get('role') != 'admin':
+        flash('Only administrators can manage nurses.')
+        return redirect(url_for('dashboard'))
+
+    # Check if the nurse exists
+    if username not in nurses:
+        flash(f'Head Nurse {username} not found!')
+        return redirect(url_for('manage_nurses'))
+
+    # Remove the nurse
+    del nurses[username]
+    del users[username]
+    flash(f'Head Nurse {username} deleted successfully!')
+    return redirect(url_for('manage_nurses'))
+
+# Manage Nurses Page
+@app.route('/manage_nurses')
+def manage_nurses():
+    if session.get('role') != 'admin':
+        flash('Only administrators can access this page.')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('manage_nurses.html', nurses=nurses)
 
 # Run the app
 if __name__ == '__main__':
