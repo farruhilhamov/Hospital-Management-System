@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card {
+            background: #fafafa;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .table th, .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table th {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        .table td a {
+            text-decoration: none;
+            color: #007bff;
+        }
+
+        .table td a:hover {
+            text-decoration: underline;
+        }
+
+        .back-button {
+            margin-top: 20px;
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+
+        .back-button:hover {
+            background-color: #0056b3;
+        }
+
+        .flash-message {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            color: #fff;
+            background-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to the Admin Dashboard</h1>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-message">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- Section to manage doctors -->
+        <div class="card">
+            <h2>Manage Doctors</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Doctor Name</th>
+                        <th>Specialty</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for username, doctor in doctors.items() %}
+                        <tr>
+                            <td>{{ doctor.name }}</td>
+                            <td>{{ doctor.specialty }}</td>
+                            <td>
+                                <a href="{{ url_for('profile', username=username) }}">View</a> |
+                                <a href="{{ url_for('edit_doctor', username=username) }}">Edit</a> |
+                                <form action="{{ url_for('delete_doctor', username=username) }}" method="POST" style="display:inline;">
+                                    <button type="submit" style="color: red; background: none; border: none; cursor: pointer;">Delete</button>
+                                </form>
+                            </td>                       
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <a href="{{ url_for('add_doctor') }}" class="back-button">Add New Doctor</a>
+        </div>
+
+        <!-- Section to manage patients -->
+        <div class="card">
+            <h2>Manage Patients</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Patient Name</th>
+                        <th>Age</th>
+                        <th>Gender</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for username, patient in patients.items() %}
+                        <tr>
+                            <td>{{ patient.name }}</td>
+                            <td>{{ patient.age }}</td>
+                            <td>{{ patient.gender }}</td>
+                            <td>
+                                <a href="{{ url_for('profile', username=username) }}">View</a> |
+                                <a href="{{ url_for('edit_patient', username=username) }}">Edit</a> |
+                                <form action="{{ url_for('delete_patient', username=username) }}" method="POST" style="display:inline;">
+                                    <button type="submit" style="color: red; background: none; border: none; cursor: pointer;">Delete</button>
+                                </form>
+                            </td>
+                            
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <a href="{{ url_for('register_patient') }}" class="back-button">Register New Patient</a>
+        </div>
+
+        <!-- Section to view appointments -->
+        <div class="card">
+            <h2>Upcoming Appointments</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Patient Name</th>
+                        <th>Doctor Name</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if appointments %}
+                        {% for appt_id, appt in appointments.items() %}
+                            <tr>
+                                <td>{{ patients[appt.patient].name }}</td>
+                                <td>{{ doctors[appt.doctor].name }}</td>
+                                <td>{{ appt.date }}</td>
+                                <td>{{ appt.time }}</td>
+                                <td>
+                                    <a href="{{ url_for('view_appointment', appt_id=appt_id) }}">View</a> |
+                                    <a href="{{ url_for('delete_appointment', appt_id=appt_id) }}" style="color: red;">Delete</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5">No upcoming appointments.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <a href="{{ url_for('index') }}" class="back-button">Back to Home</a>
+    </div>
+</body>
+</html>

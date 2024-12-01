@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ doctor.name }}'s Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card {
+            background: #fafafa;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .appointments-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .appointments-list li {
+            background: #e9f7ef;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+
+        .appointments-list li a {
+            text-decoration: none;
+            color: #333;
+        }
+
+        .appointments-list li a:hover {
+            color: #007bff;
+        }
+
+        .patient-details {
+            font-size: 14px;
+            color: #777;
+        }
+
+        .back-button {
+            margin-top: 20px;
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+
+        .back-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome, Dr. {{ doctor.name }}</h1>
+        <p><strong>Specialty:</strong> {{ doctor.specialty }}</p>
+
+        <div class="card">
+            <h2>Upcoming Appointments</h2>
+            <ul class="appointments-list">
+                {% if appointments %}
+                    {% for appt in appointments %}
+                        <li>
+                            <a href="{{ url_for('profile', username=patients[appt.patient].name) }}">
+                                Appointment with {{ patients[appt.patient].name }} on {{ appt.date }} at {{ appt.time }}
+                            </a>
+                            <div class="patient-details">
+                                <strong>Patient Details:</strong>
+                                <p>Age: {{ patients[appt.patient].age }} | Gender: {{ patients[appt.patient].gender }}</p>
+                            </div>
+                        </li>
+                    {% endfor %}
+                {% else %}
+                    <li>No upcoming appointments.</li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <a href="{{ url_for('index') }}" class="back-button">Back to Home</a>
+    </div>
+</body>
+</html>

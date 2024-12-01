@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Add Doctor</title>
+</head>
+<body>
+    <h1>Add New Doctor</h1>
+    <form method="POST">
+        <label for="username">Username:</label>
+        <input type="text" name="username" required><br>
+
+        <label for="name">Full Name:</label>
+        <input type="text" name="name" required><br>
+
+        <label for="specialty">Specialty:</label>
+        <input type="text" name="specialty" required><br>
+
+        <button type="submit">Add Doctor</button>
+    </form>
+    <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+</body>
+</html>

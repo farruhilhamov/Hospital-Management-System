@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Appointment</title>
+</head>
+<body>
+    <h1>Edit Appointment</h1>
+    <form method="POST">
+        <label for="patient">Select Patient:</label>
+        <select name="patient" required>
+            {% for username, patient in patients.items() %}
+            <option value="{{ username }}" {% if username == appointment.patient %}selected{% endif %}>{{ patient.name }}</option>
+            {% endfor %}
+        </select><br>
+
+        <label for="doctor">Select Doctor:</label>
+        <select name="doctor" required>
+            {% for username, doctor in doctors.items() %}
+            <option value="{{ username }}" {% if username == appointment.doctor %}selected{% endif %}>{{ doctor.name }} - {{ doctor.specialty }}</option>
+            {% endfor %}
+        </select><br>
+
+        <label for="date">Date:</label>
+        <input type="date" name="date" value="{{ appointment.date }}" required><br>
+
+        <label for="time">Time:</label>
+        <input type="time" name="time" value="{{ appointment.time }}" required><br>
+
+        <button type="submit">Update Appointment</button>
+    </form>
+    <a href="{{ url_for('view_appointments') }}">Back to Appointments</a>
+</body>
+</html>
