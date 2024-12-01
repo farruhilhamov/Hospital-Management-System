@@ -2,88 +2,149 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Nurses</title>
-</head>
-<body>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
             background-color: #f4f4f9;
+            padding: 20px;
+        }
+
+        h1, h2 {
             color: #333;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
         }
-        header {
-            background-color: #007bff;
-            color: white;
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-container {
+            background-color: #fafafa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .form-container input, .form-container button {
             width: 100%;
-            padding: 1rem 0;
-            text-align: center;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
         }
-        main {
-            max-width: 800px;
-            padding: 2rem;
-            text-align: center;
-        }
-        a {
-            display: inline-block;
-            margin: 0.5rem;
-            padding: 0.7rem 1.2rem;
-            text-decoration: none;
-            color: white;
+
+        .form-container button {
             background-color: #007bff;
-            border-radius: 4px;
-            transition: background-color 0.3s ease;
+            color: #fff;
+            border: none;
         }
-        a:hover {
+
+        .form-container button:hover {
             background-color: #0056b3;
         }
-        footer {
-            margin-top: auto;
-            background-color: #333;
-            color: white;
-            width: 100%;
-            text-align: center;
-            padding: 1rem 0;
+
+        .flash-message {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            color: #fff;
+            background-color: #28a745;
+        }
+
+        .flash-message.error {
+            background-color: #dc3545;
+        }
+
+        .nurse-list {
+            margin-top: 20px;
+        }
+
+        .nurse-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .nurse-list li {
+            background: #fafafa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nurse-list button {
+            background-color: #dc3545;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .nurse-list button:hover {
+            background-color: #c82333;
         }
     </style>
-    <h1>Manage Nurses</h1>
+</head>
+<body>
+    <div class="container">
+        <h1>Manage Head Nurses</h1>
 
-    <!-- Form to Add a New Nurse -->
-    <form method="POST" action="{{ url_for('add_nurse') }}">
-        <label for="username">Username:</label>
-        <input type="text" name="username" id="username" required>
-        
-        <label for="name">Name:</label>
-        <input type="text" name="name" id="name" required>
-        
-        <label for="specialty">Specialty:</label>
-        <input type="text" name="specialty" id="specialty">
-        
-        <label for="password">Password:</label>
-        <input type="password" name="password" id="password" required>
-        
-        <button type="submit">Add Nurse</button>
-    </form>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-message {% if 'error' in messages[0] %}error{% endif %}">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% endwith %}
 
-    <h2>Existing Nurses</h2>
-    
-    <!-- Display Existing Nurses with Delete Option -->
-    <ul>
-        {% for username, nurse in nurses.items() %}
-        <li>
-            {{ nurse.name }} - {{ nurse.specialty or 'No specialty' }}
-            <form method="POST" action="{{ url_for('delete_nurse', username=username) }}" style="display:inline;">
-                <button type="submit" onclick="return confirm('Are you sure you want to delete {{ nurse.name }}?')">Delete</button>
+        <!-- Form to add a new nurse -->
+        <div class="form-container">
+            <h2>Add New Head Nurse</h2>
+            <form method="POST" action="{{ url_for('manage_nurses') }}">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" required>
+
+                <label for="specialty">Specialty:</label>
+                <input type="text" id="specialty" name="specialty" required>
+
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+
+                <button type="submit">Add Head Nurse</button>
             </form>
-        </li>
-        {% else %}
-        <li>No nurses available.</li>
-        {% endfor %}
-    </ul>
+        </div>
+
+        <!-- List of existing nurses -->
+        <div class="nurse-list">
+            <h2>Existing Head Nurses</h2>
+            {% if nurses %}
+                <ul>
+                    {% for username, nurse in nurses.items() %}
+                        <li>
+                            <span>{{ nurse.name }} - {{ nurse.username }}</span>
+                            <form method="POST" action="{{ url_for('delete_nurse', username=username) }}" style="display:inline;">
+                                <button type="submit">Delete</button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No head nurses found.</p>
+            {% endif %}
+        </div>
+    </div>
 </body>
 </html>

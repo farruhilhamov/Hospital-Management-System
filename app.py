@@ -368,12 +368,42 @@ def delete_nurse(username):
     return redirect(url_for('manage_nurses'))
 
 # Manage Nurses Page
-@app.route('/manage_nurses')
+@app.route('/manage_nurses', methods=['GET', 'POST'])
 def manage_nurses():
     if session.get('role') != 'admin':
         flash('Only administrators can access this page.')
         return redirect(url_for('dashboard'))
     
+    if request.method == 'POST':
+        # Get form data for new nurse
+        username = request.form.get('username')
+        name = request.form.get('name')
+        specialty = request.form.get('specialty')
+        password = request.form.get('password')
+
+        # Validate input (basic example, you can add more checks here)
+        if not username or not name or not specialty or not password:
+            flash('All fields are required!')
+            return redirect(url_for('manage_nurses'))
+        
+        # Add the new nurse (you should add it to your database)
+        try:
+            # Example of adding to your data structure, replace with actual DB operation
+            new_nurse = {
+                'username': username,
+                'name': name,
+                'specialty': specialty,
+                'password': password  # Ideally, hash the password before saving
+            }
+            nurses[username] = new_nurse  # Assuming nurses is a dictionary
+
+            flash('New head nurse added successfully!')
+            return redirect(url_for('manage_nurses'))
+        except Exception as e:
+            flash(f'Error adding nurse: {str(e)}')
+            return redirect(url_for('manage_nurses'))
+
+    # For GET request, just render the page with existing nurses
     return render_template('manage_nurses.html', nurses=nurses)
 
 @app.route('/view_appointment/<int:appointment_id>', methods=['GET'])
