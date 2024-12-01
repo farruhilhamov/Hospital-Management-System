@@ -401,9 +401,9 @@ def finish_appointment(appointment_id):
     patient_username = appointment['patient']
     if patient_username in patients:
         patient_appointments = patients[patient_username].get('appointments', [])
-        patients[patient_username]['appointments'] = [
-            appt for appt in patient_appointments if appt.get('id') != appointment_id
-        ]
+        if appointment_id in patient_appointments:
+            patient_appointments.remove(appointment_id)
+            patients[patient_username]['appointment']=patient_appointments
 
     flash(f'Appointment with {patients[patient_username]["name"]} on {appointment["date"]} at {appointment["time"]} has been finished.')
     return redirect(url_for('dashboard'))

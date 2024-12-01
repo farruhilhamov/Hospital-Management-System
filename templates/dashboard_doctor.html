@@ -91,6 +91,12 @@
                                 <strong>Patient Details:</strong>
                                 <p>Age: {{ patients[appt.patient].age }} | Gender: {{ patients[appt.patient].gender }}</p>
                             </div>
+                            <td>
+                                <form method="POST" action="{{ url_for('finish_appointment', appointment_id=loop.index) }}">
+                                    <button type="submit" class="btn btn-success">Finish</button>
+                                </form>
+                            </td>
+        
                         </li>
                     {% endfor %}
                 {% else %}
@@ -100,28 +106,6 @@
         </div>
 
         <a href="{{ url_for('index') }}" class="back-button">Back to Home</a>
-        <table>
-            <thead>
-                <tr>
-                    <th>Patient</th>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for appointment in appointments %}
-                <tr>
-                    <td>{{ patients[appointment.patient].name }}</td>
-                    <td>{{ appointment.date }}</td>
-                    <td>{{ appointment.time }}</td>
-                    <td>
-                        <form method="POST" action="{{ url_for('finish_appointment', appointment_id=loop.index) }}">
-                            <button type="submit" class="btn btn-success">Finish</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
             </tbody>
         </table>
         
