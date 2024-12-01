@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schedule Appointment</title>
+    <title>Patient Profile</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,17 +11,21 @@
             background-color: #f4f4f9;
         }
 
-        h1 {
+        h1, h2, h3 {
             color: #333;
         }
 
-        form {
+        .profile, .actions {
             background-color: #fff;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
-            margin: 0 auto;
+            max-width: 600px;
+            margin: 20px auto;
+        }
+
+        .actions form {
+            margin-bottom: 15px;
         }
 
         label {
@@ -71,9 +75,9 @@
     </style>
 </head>
 <body>
-    <h1>Schedule an Appointment</h1>
+    <h1>Patient Profile</h1>
 
-    <!-- Display any flash messages -->
+    <!-- Display flash messages -->
     {% with messages = get_flashed_messages() %}
         {% if messages %}
             <div class="messages">
@@ -86,22 +90,43 @@
         {% endif %}
     {% endwith %}
 
-    <form method="POST">
-        <label for="doctor">Select Doctor:</label>
-        <select name="doctor" required>
-            {% for username, doctor in doctors.items() %}
-                <option value="{{ username }}">{{ doctor.name }} - {{ doctor.specialty }}</option>
-            {% endfor %}
-        </select>
+    <div class="profile">
+        <h2>{{ user.name }}</h2>
+        <p><strong>Age:</strong> {{ user.age }}</p>
+        <p><strong>Gender:</strong> {{ user.gender }}</p>
+        <p><strong>Medical History:</strong> {{ user.medical_history or "No history available" }}</p>
+    </div>
 
-        <label for="date">Date:</label>
-        <input type="date" name="date" required><br>
-
-        <label for="time">Time:</label>
-        <input type="time" name="time" required><br>
-
-        <button type="submit">Schedule Appointment</button>
-    </form>
+    <!-- Role-specific actions -->
+    {% if session['role'] == 'doctor' %}
+    <div class="actions">
+        <h3>Doctor Actions</h3>
+        <form method="POST" action="{{ url_for('finish_appointment', appointment_id=appointment.id) }}">
+            <button type="submit">Finish Appointment</button>
+        </form>
+        <form method="POST" action="{{ url_for('schedule_appointment') }}">
+            <label for="date">Follow-up Date:</label>
+            <input type="date" name="date" required>
+            <label for="time">Time:</label>
+            <input type="time" name="time" required>
+            <button type="submit">Schedule Follow-up</button>
+        </form>
+    </div>
+    {% elif session['role'] == 'head_nurse' %}
+    <div class="actions">
+        <h3>Nurse Actions</h3>
+        <form method="POST" action="{{ url_for('update_patient_notes', patient_username=user.username) }}">
+            <label for="notes">Add Notes:</label>
+            <textarea name="notes" rows="4" required></textarea>
+            <button type="submit">Save Notes</button>
+        </form>
+    </div>
+    {% elif session['role'] == 'patient' %}
+    <div class="actions">
+        <h3>Patient Actions</h3>
+        <a href="{{ url_for('schedule_appointment') }}">Schedule a New Appointment</a>
+    </div>
+    {% endif %}
 
     <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
 </body>

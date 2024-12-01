@@ -11,7 +11,7 @@ users = {
 }
 
 patients = {
-    "patient1": {"name": "John", "age": 30, "gender": "Male", "appointments": []}
+    "patient1": {"name": "John", "age": 30, "gender": "Male", "appointments": [1]}
 }
 
 doctors = {
@@ -20,7 +20,16 @@ doctors = {
 
 nurses = {username: user for username, user in users.items() if user.get('role') == 'head_nurse'} or {}
 
-appointments = {}
+appointments = {
+    1: {
+        "patient": "patient1",
+        "doctor": "doctor1",
+        "date": "2024-03-31",
+        "time": "23:42",
+        "status": "scheduled"
+    }
+}
+
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -44,17 +53,37 @@ def not_found(error):
 def profile(username):
     # Look up the patient by username in the patients dictionary
     user = patients.get(username)
-    
-    nurses = {username: user for username, user in users.items() if user.get('role') == 'head_nurse'} or {}
-
 
     # If the patient is not found, flash an error and redirect
     if not user:
-        flash(f'User {username} not found!')
+        flash(f'Patient {username} not found!')
         return redirect(url_for('index'))
 
-    # Render the profile page, passing the user (specific patient)
-    return render_template('patient_profile.html', user=user, doctors=doctors,nurses=nurses)
+    # Get the role of the logged-in user
+    role = session.get('role')
+
+    # Pass relevant data based on the role
+    if role == 'doctor':
+        doctor_appointments = [appt for appt in appointments.values() if appt['doctor'] == session['username']]
+        return render_template(
+            'patient_profile.html', 
+            user=user, 
+            doctors=doctors, 
+            nurses=nurses, 
+            appointments=doctor_appointments
+        )
+    elif role == 'head_nurse':
+        nurse_appointments = [appt for appt in appointments.values() if appt['patient'] == username]
+        return render_template(
+            'patient_profile.html', 
+            user=user, 
+            doctors=doctors, 
+            nurses=nurses, 
+            appointments=nurse_appointments
+        )
+    else:
+        flash('Unauthorized access to this profile.')
+        return redirect(url_for('dashboard'))
 
 
 
@@ -93,32 +122,50 @@ def dashboard():
         flash('Please log in to access the dashboard.')
         return redirect(url_for('login'))
 
-    # Pass doctors and patients to all dashboards
+    # Base context to pass to templates
     context = {
         'doctors': doctors,
         'patients': patients,
     }
 
+    # Admin dashboard
     if role == 'admin':
         nurses = {username: user for username, user in users.items() if user.get('role') == 'head_nurse'}
-        return render_template(
-        'dashboard_admin.html',
-        patients=patients,
-        doctors=doctors,
-        appointments=appointments,
-        nurses=nurses
-    )
+        context.update({'appointments': appointments, 'nurses': nurses})
+        return render_template('dashboard_admin.html', **context)
 
+    # Doctor dashboard
     elif role == 'doctor':
         doctor = doctors.get(username)
+        if not doctor:
+            flash('Doctor not found!')
+            return redirect(url_for('index'))
+
         doctor_appointments = [appt for appt in appointments.values() if appt['doctor'] == username]
-        return render_template('dashboard_doctor.html', **context, doctor=doctor, appointments=doctor_appointments)
+        context.update({'doctor': doctor, 'appointments': doctor_appointments})
+        return render_template('dashboard_doctor.html', **context)
+
+    # Patient dashboard
     elif role == 'patient':
         patient = patients.get(username)
-        patient_appointments = patient.get("appointments", [])
-        return render_template('dashboard_patient.html', **context, patient=patient, appointments=patient_appointments)
+        if not patient:
+            flash('Patient not found!')
+            return redirect(url_for('index'))
+
+        # Fetch the appointment data for the patient
+        patient_appointments = [appointments[appt_id] for appt_id in patient.get("appointments", []) if appt_id in appointments]
+        context.update({'patient': patient, 'appointments': patient_appointments})
+        return render_template('dashboard_patient.html', **context)
+
+    # Head Nurse dashboard
     elif role == 'head_nurse':
-        return render_template('dashboard_head_nurse.html', **context, appointments=appointments)
+        context.update({'appointments': appointments})
+        return render_template('dashboard_head_nurse.html', **context)
+
+    # Unauthorized role or access
+    flash('Unauthorized access!')
+    return redirect(url_for('index'))
+
 
 # Patient registration route
 @app.route('/register_patient', methods=['GET', 'POST'])
@@ -192,7 +239,7 @@ def schedule_appointment():
             'date': date,
             'time': time
         }
-
+        print(appointments)
         # Store the appointment in the appointments dictionary
         appointments[appointment_id] = appointment
 
