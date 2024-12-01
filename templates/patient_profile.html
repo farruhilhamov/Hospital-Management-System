@@ -101,16 +101,18 @@
     {% if session['role'] == 'doctor' %}
     <div class="actions">
         <h3>Doctor Actions</h3>
-        <form method="POST" action="{{ url_for('finish_appointment', appointment_id=appointment.id) }}">
-            <button type="submit">Finish Appointment</button>
-        </form>
-        <form method="POST" action="{{ url_for('schedule_appointment') }}">
-            <label for="date">Follow-up Date:</label>
-            <input type="date" name="date" required>
-            <label for="time">Time:</label>
-            <input type="time" name="time" required>
-            <button type="submit">Schedule Follow-up</button>
-        </form>
+        <ul>
+            {% for appt in appointment %}
+            <li>
+                Appointment with Dr. {{ doctors[appt['doctor']].name }} on {{ appt['date'] }} at {{ appt['time'] }}
+                <form method="POST" action="{{ url_for('finish_appointment', appointment_id=appt['id']) }}">
+                    <!-- Your form content here -->
+                    <button type="submit">Finish Appointment</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+        
     </div>
     {% elif session['role'] == 'head_nurse' %}
     <div class="actions">

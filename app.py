@@ -64,14 +64,16 @@ def profile(username):
 
     # Pass relevant data based on the role
     if role == 'doctor':
-        doctor_appointments = [appt for appt in appointments.values() if appt['doctor'] == session['username']]
-        return render_template(
-            'patient_profile.html', 
-            user=user, 
-            doctors=doctors, 
-            nurses=nurses, 
-            appointments=doctor_appointments
-        )
+        patient_appointments = user.get('appointments', [])
+        detailed_appointments = []
+
+        # Convert appointment IDs to actual appointment details
+        for appt_id in patient_appointments:
+            appt_details = appointments.get(appt_id)
+            if appt_details:
+                detailed_appointments.append(appt_details)
+
+        return render_template('patient_profile.html', user=user, appointments=detailed_appointments, doctors=doctors)
     elif role == 'head_nurse':
         nurse_appointments = [appt for appt in appointments.values() if appt['patient'] == username]
         return render_template(
