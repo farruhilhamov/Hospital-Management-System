@@ -134,7 +134,7 @@ def dashboard():
     if role == 'admin':
         nurses = {username: user for username, user in users.items() if user.get('role') == 'head_nurse'}
         context.update({'appointments': appointments, 'nurses': nurses})
-        return render_template('dashboard_admin.html', **context)
+        return render_template('dashboard_admin.html', **context,user=users)
 
     # Doctor dashboard
     elif role == 'doctor':
@@ -375,6 +375,27 @@ def manage_nurses():
         return redirect(url_for('dashboard'))
     
     return render_template('manage_nurses.html', nurses=nurses)
+
+@app.route('/view_appointment/<int:appointment_id>', methods=['GET'])
+def view_appointment(appointment_id):
+    # Get the appointment from the appointments dictionary
+    appointment = appointments.get(appointment_id)
+
+    if not appointment:
+        flash(f'Appointment {appointment_id} not found!')
+        return redirect(url_for('dashboard'))
+
+    # Get the patient and doctor information
+    patient = patients.get(appointment['patient'])
+    doctor = doctors.get(appointment['doctor'])
+
+    if not patient or not doctor:
+        flash('Invalid patient or doctor details!')
+        return redirect(url_for('dashboard'))
+
+    # Render the view_appointment.html template with appointment details
+    return render_template('view_appointment.html', appointment=appointment, patient=patient, doctor=doctor)
+
 
 @app.route('/finish_appointment/<int:appointment_id>', methods=['POST'])
 def finish_appointment(appointment_id):
