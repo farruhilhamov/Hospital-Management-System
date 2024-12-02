@@ -51,41 +51,67 @@ def not_found(error):
 
 @app.route('/user/<username>')
 def profile(username):
-    # Look up the patient by username in the patients dictionary
-    user = patients.get(username)
+    # Look up the user (could be a patient or doctor) by username
+    user = patients.get(username) or doctors.get(username)
 
-    # If the patient is not found, flash an error and redirect
+    # If the user is not found, flash an error and redirect
     if not user:
-        flash(f'Patient {username} not found!')
+        flash(f'User {username} not found!')
         return redirect(url_for('index'))
 
-    # Get the role of the logged-in user
+    # Get the role of the logged-in user from the session
     role = session.get('role')
 
-    # Pass relevant data based on the role
-    if role == 'doctor':
+    # Admin can access all user data
+    if role == 'admin':
+        user_data = {
+            "user": user,
+            "appointments": [],
+            "doctors": doctors,
+            "nurses": nurses,
+        }
+
+    # Fetch patient-specific appointments
+    if role in ['admin', 'doctor', 'head_nurse']:
         patient_appointments = user.get('appointments', [])
-        detailed_appointments = []
+        user_data["appointments"] = [
+            {
+                "id": appt_id,
+                **appointments.get(appt_id, {})
+            }
+            for appt_id in patient_appointments if appt_id in appointments
+        ]
 
-        # Convert appointment IDs to actual appointment details
-        for appt_id in patient_appointments:
-            appt_details = appointments.get(appt_id)
-            if appt_details:
-                detailed_appointments.append(appt_details)
+        return render_template('patient_profile.html', **user_data)
 
-        return render_template('patient_profile.html', user=user, appointments=detailed_appointments, doctors=doctors)
-    elif role == 'head_nurse':
+    # Doctors can view patient details and their appointments
+    elif role == 'doctor' and username in patients:
+        patient_appointments = user.get('appointments', [])
+        detailed_appointments = [
+            appointments.get(appt_id) for appt_id in patient_appointments if appt_id in appointments
+        ]
+        return render_template(
+            'patient_profile.html',
+            user=user,
+            appointments=detailed_appointments,
+            doctors=doctors,
+        )
+
+    # Head nurses can view patient details and appointments related to the user
+    elif role == 'head_nurse' and username in patients:
         nurse_appointments = [appt for appt in appointments.values() if appt['patient'] == username]
         return render_template(
-            'patient_profile.html', 
-            user=user, 
-            doctors=doctors, 
-            nurses=nurses, 
-            appointments=nurse_appointments
+            'patient_profile.html',
+            user=user,
+            doctors=doctors,
+            nurses=nurses,
+            appointments=nurse_appointments,
         )
-    else:
-        flash('Unauthorized access to this profile.')
-        return redirect(url_for('dashboard'))
+
+    # Handle unauthorized access
+    flash('Unauthorized access to this profile.')
+    return redirect(url_for('dashboard'))
+
 
 
 
@@ -367,7 +393,7 @@ def delete_nurse(username):
     flash(f'Head Nurse {username} deleted successfully!')
     return redirect(url_for('manage_nurses'))
 
-# Manage Nurses Page
+# Route to manage nurses (admin-only)
 @app.route('/manage_nurses', methods=['GET', 'POST'])
 def manage_nurses():
     if session.get('role') != 'admin':
@@ -381,30 +407,96 @@ def manage_nurses():
         specialty = request.form.get('specialty')
         password = request.form.get('password')
 
-        # Validate input (basic example, you can add more checks here)
+        # Validate input
         if not username or not name or not specialty or not password:
             flash('All fields are required!')
             return redirect(url_for('manage_nurses'))
-        
-        # Add the new nurse (you should add it to your database)
-        try:
-            # Example of adding to your data structure, replace with actual DB operation
-            new_nurse = {
-                'username': username,
-                'name': name,
-                'specialty': specialty,
-                'password': password  # Ideally, hash the password before saving
-            }
-            nurses[username] = new_nurse  # Assuming nurses is a dictionary
 
-            flash('New head nurse added successfully!')
+        # Check if the username exists
+        if username in users:
+            flash(f'Username {username} already exists!')
             return redirect(url_for('manage_nurses'))
-        except Exception as e:
-            flash(f'Error adding nurse: {str(e)}')
-            return redirect(url_for('manage_nurses'))
+
+        # Add the new nurse to the users and nurses dictionary
+        users[username] = {"password": generate_password_hash(password), "role": "head_nurse"}
+        nurses[username] = {"name": name, "specialty": specialty}
+        flash(f'Head Nurse {name} added successfully!')
+        return redirect(url_for('manage_nurses'))
 
     # For GET request, just render the page with existing nurses
     return render_template('manage_nurses.html', nurses=nurses)
+
+@app.route('/edit_nurse/<username>', methods=['GET', 'POST'])
+def edit_nurse(username):
+    # Fetch the nurse from the 'nurses' dictionary
+    nurse = nurses.get(username)
+    if not nurse:
+        flash(f'Head Nurse {username} not found!', 'error')
+        return redirect(url_for('manage_nurses'))
+
+    # Handle the form submission (POST request)
+    if request.method == 'POST':
+        # Update the nurse's details from the form
+        nurse['name'] = request.form['name']
+        nurse['specialty'] = request.form['specialty']
+        flash(f'Head Nurse {nurse["name"]} updated successfully!', 'success')
+        return redirect(url_for('manage_nurses'))
+
+    # If the request method is GET, render the form to edit the nurse details
+    return render_template('edit_nurse.html', nurse=nurse)
+
+
+@app.route('/manage_doctors', methods=['GET', 'POST'])
+def manage_doctors():
+    if session.get('role') != 'admin':
+        flash('Only administrators can access this page.')
+        return redirect(url_for('dashboard'))
+
+    # Handle deleting a doctor
+    if request.method == 'POST' and 'delete_doctor' in request.form:
+        username = request.form.get('username')
+        if username:
+            if delete_doctor(username):
+                flash('Doctor deleted successfully.')
+            else:
+                flash('Error deleting doctor.')
+
+    return render_template('manage_doctors.html', doctors=doctors)
+
+@app.route('/manage_users', methods=['GET', 'POST'])
+def manage_users():
+    if session.get('role') != 'admin':
+        flash('Only administrators can manage users.')
+        return redirect(url_for('dashboard'))
+
+    # Fetch all user data (patients, doctors, nurses, etc.)
+    users_data = {
+        'patients': patients,
+        'doctors': doctors,
+        'nurses': nurses
+    }
+
+    if request.method == 'POST':
+        # Handle the edit user functionality
+        user_type = request.form.get('user_type')  # E.g., 'nurses'
+        username = request.form.get('username')  # Username of the user to edit
+        field = request.form.get('field')  # Field to edit (e.g., 'name', 'specialty')
+        new_value = request.form.get('new_value')  # New value to update
+
+        # Validate inputs
+        if not all([user_type, username, field, new_value]):
+            flash("Incomplete data provided for editing.")
+            return redirect(url_for('manage_users'))
+
+        # Update the corresponding user's data (only allows nurse edits here)
+        if user_type == 'nurses' and username in nurses:
+            nurses[username][field] = new_value
+            flash(f'Nurse {username} updated successfully!')
+        else:
+            flash(f'{user_type.capitalize()} {username} not found or cannot be edited.')
+
+    return render_template('manage_users.html', users=users_data)
+
 
 @app.route('/view_appointment/<int:appointment_id>', methods=['GET'])
 def view_appointment(appointment_id):

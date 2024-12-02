@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patient Profile</title>
+    <title>User Profile</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -20,7 +20,7 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
+            max-width: 800px;
             margin: 20px auto;
         }
 
@@ -34,7 +34,7 @@
             font-weight: bold;
         }
 
-        input, select, button {
+        input, select, textarea, button {
             width: 100%;
             padding: 10px;
             margin: 5px 0 15px 0;
@@ -75,7 +75,7 @@
     </style>
 </head>
 <body>
-    <h1>Patient Profile</h1>
+    <h1>User Profile</h1>
 
     <!-- Display flash messages -->
     {% with messages = get_flashed_messages() %}
@@ -90,45 +90,61 @@
         {% endif %}
     {% endwith %}
 
+    <!-- Profile Details -->
     <div class="profile">
         <h2>{{ user.name }}</h2>
+        <p><strong>Role:</strong> {{ session['role']|capitalize }}</p>
         <p><strong>Age:</strong> {{ user.age }}</p>
         <p><strong>Gender:</strong> {{ user.gender }}</p>
+        <p><strong>Contact:</strong> {{ user.phone }}</p>
+        <p><strong>Address:</strong> {{ user.address }}</p>
         <p><strong>Medical History:</strong> {{ user.medical_history or "No history available" }}</p>
     </div>
 
-    <!-- Role-specific actions -->
-    {% if session['role'] == 'doctor' %}
+    <!-- Role-Specific Actions -->
     <div class="actions">
+        {% if session['role'] == 'doctor' %}
         <h3>Doctor Actions</h3>
         <ul>
-            {% for appt in appointment %}
+            {% for appt in appointments %}
             <li>
-                Appointment with Dr. {{ doctors[appt['doctor']].name }} on {{ appt['date'] }} at {{ appt['time'] }}
+                Appointment with {{ appt['patient'] }} on {{ appt['date'] }} at {{ appt['time'] }}
+                {% if session['role'] == 'doctor' %}
                 <form method="POST" action="{{ url_for('finish_appointment', appointment_id=appt['id']) }}">
-                    <!-- Your form content here -->
                     <button type="submit">Finish Appointment</button>
                 </form>
+                {% endif %}
             </li>
             {% endfor %}
         </ul>
-        
-    </div>
-    {% elif session['role'] == 'head_nurse' %}
-    <div class="actions">
+        {% elif session['role'] == 'head_nurse' %}
         <h3>Nurse Actions</h3>
         <form method="POST" action="{{ url_for('update_patient_notes', patient_username=user.username) }}">
             <label for="notes">Add Notes:</label>
             <textarea name="notes" rows="4" required></textarea>
             <button type="submit">Save Notes</button>
         </form>
+        {% elif session['role'] == 'admin' %}
+        <h3>Admin Actions</h3>
+        <ul>
+            <li><a href="{{ url_for('manage_users') }}">Manage Users</a></li>
+        </ul>
+{% elif session['role'] == 'patient' %}
+<h3>Patient Actions</h3>
+<ul>
+    <li><a href="{{ url_for('schedule_appointment') }}">Schedule a New Appointment</a></li>
+    <li>Upcoming Appointments:</li>
+    <ul>
+        {% for appt in appointments %}
+        <li>
+            {{ appt['date'] }} at {{ appt['time'] }} with Dr. {{ appt['doctor'] }}
+            <a href="{{ url_for('view_appointment', appointment_id=appt['id']) }}">View Details</a>
+        </li>
+        {% endfor %}
+    </ul>
+</ul>
+{% endif %}
     </div>
-    {% elif session['role'] == 'patient' %}
-    <div class="actions">
-        <h3>Patient Actions</h3>
-        <a href="{{ url_for('schedule_appointment') }}">Schedule a New Appointment</a>
-    </div>
-    {% endif %}
 
     <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
 </body>

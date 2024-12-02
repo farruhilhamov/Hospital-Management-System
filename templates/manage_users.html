@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        .section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            margin: 20px auto;
+        }
+
+        .user-list, .edit-form {
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin: 10px 0 5px;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .messages {
+            background-color: #d4edda;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            border-radius: 5px;
+        }
+
+        .messages.error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Manage Users</h1>
+
+    <!-- Display flash messages -->
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            <div class="messages">
+                <ul>
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Display User Lists -->
+    <div class="section user-list">
+        <h2>User List</h2>
+        {% for user_type, user_group in users.items() %}
+        <h3>{{ user_type.capitalize() }}</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>Details</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for username, details in user_group.items() %}
+                <tr>
+                    <td>{{ username }}</td>
+                    <td>{{ details.name }}</td>
+                    <td>
+                        Age: {{ details.age }}<br>
+                        Gender: {{ details.gender }}<br>
+                        Role: {{ details.role }}
+                    </td>
+                    <td>
+                        <form method="POST" action="{{ url_for('manage_users') }}">
+                            <!-- <input type="hidden" name="username" value="{{ username }}">
+                            <input type="hidden" name="user_type" value="{{ user_type }}">
+                            <button type="submit" name="action" value="edit">Edit</button> -->
+                            <button type="submit" name="action" value="delete" onclick="return confirm('Are you sure you want to delete this user?');">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endfor %}
+    </div>
+
+    <!-- Edit User Form -->
+    <div class="section edit-form">
+        <h2>Edit User</h2>
+        <form method="POST" action="{{ url_for('manage_users') }}">
+            <label for="user_type">User Type</label>
+            <select name="user_type" required>
+                <option value="">-- Select User Type --</option>
+                <option value="patients">Patients</option>
+                <option value="doctors">Doctors</option>
+                <option value="nurses">Nurses</option>
+            </select>
+
+            <label for="username">Username</label>
+            <input type="text" name="username" placeholder="Enter username" required>
+
+            <label for="field">Field to Edit</label>
+            <select name="field" required>
+                <option value="">-- Select Field --</option>
+                <option value="name">Name</option>
+                <option value="age">Age</option>
+                <option value="gender">Gender</option>
+                <option value="role">Role</option>
+                <option value="phone">Phone</option>
+                <option value="address">Address</option>
+                <option value="medical_history">Medical History</option>
+            </select>
+
+            <label for="new_value">New Value</label>
+            <input type="text" name="new_value" placeholder="Enter new value" required>
+
+            <button type="submit" name="action" value="update">Update User</button>
+        </form>
+    </div>
+
+    <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+</body>
+</html>
