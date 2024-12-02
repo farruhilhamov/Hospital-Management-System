@@ -1,16 +1,121 @@
+<!-- dashboard_head_nurse.html -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Head Nurse Dashboard</title>
 </head>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f4f4f9;
+    }
+
+    h1, h2, h3 {
+        color: #333;
+    }
+
+    .profile, .actions {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        max-width: 800px;
+        margin: 20px auto;
+    }
+
+    .actions form {
+        margin-bottom: 15px;
+    }
+
+    label {
+        display: block;
+        margin: 10px 0 5px;
+        font-weight: bold;
+    }
+
+    input, select, textarea, button {
+        width: 100%;
+        padding: 10px;
+        margin: 5px 0 15px 0;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+
+    button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background-color: #45a049;
+    }
+
+    a {
+        display: inline-block;
+        margin-top: 20px;
+        text-decoration: none;
+        color: #007BFF;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+    .messages {
+        background-color: #f8d7da;
+        padding: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+        border-radius: 5px;
+    }
+</style>
 <body>
     <h1>Welcome, Head Nurse!</h1>
-    <h2>Appointments</h2>
-    <ul>
-        {% for id, appointment in appointments.items() %}
-        <li>{{ id }}: {{ appointment.patient }} with {{ appointment.doctor }} on {{ appointment.date }} at {{ appointment.time }}</li>
-        {% endfor %}
-    </ul>
+
+    <h2>All Appointments:</h2>
+    {% if appointments %}
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Patient</th>
+                    <th>Doctor</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>COVID Status</th>
+                    <th>Notes</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appt in appointments %}
+                    <tr>
+                        <td>{{ appt['patient_name'] }}</td>
+                        <td>{{ appt['doctor_name'] }}</td>
+                        <td>{{ appt['date'] }}</td>
+                        <td>{{ appt['time'] }}</td>
+                        <td>{{ appt['covid_status'] }}</td>
+                        <td>{{ appt['patient_notes'] }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('update_appointment', appt_id=appt['id']) }}">
+                                <input type="submit" value="Edit Appointment" />
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No appointments to display.</p>
+    {% endif %}
+
+    <hr>
+    <a href="{{ url_for('logout') }}">Logout</a>
 </body>
 </html>

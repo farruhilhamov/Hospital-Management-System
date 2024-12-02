@@ -140,8 +140,6 @@ def profile(username):
 
         return render_template('patient_profile.html', **user_data)
 
-
-
     # Doctors can view patient details and their appointments if the user is a patient
     elif role == 'doctor' and username in patients:
         patient_appointments = user.get('appointments', [])
@@ -173,6 +171,37 @@ def profile(username):
     # Handle unauthorized access
     flash('Unauthorized access to this profile.')
     return redirect(url_for('dashboard'))
+
+# Function to handle viewing patient details (for doctors, nurses)
+@app.route('/patient_details/<username>', methods=['GET'])
+def patient_details(username):
+    user = patients.get(username)
+
+    if not user:
+        flash('Patient not found!')
+        return redirect(url_for('dashboard'))
+
+    # Render patient profile for doctors, nurses, and admins
+    role = session.get('role')
+    if role in ['doctor', 'head_nurse', 'admin']:
+        patient_appointments = user.get('appointments', [])
+        patient_data = {
+            "user": user,
+            "appointments": [
+                {
+                    "id": appt_id,
+                    **appointments.get(appt_id, {})
+                }
+                for appt_id in patient_appointments if appt_id in appointments
+            ],
+            "notes": user.get('note', ''),
+            "covid_status": user.get('covid', 'False'),
+        }
+        return render_template('patient_profile.html', **patient_data)
+
+    flash('Unauthorized access to this profile.')
+    return redirect(url_for('dashboard'))
+
 
 
 # Login route
@@ -220,7 +249,7 @@ def dashboard():
     if role == 'admin':
         nurses = {username: user for username, user in users.items() if user.get('role') == 'head_nurse'}
         context.update({'appointments': appointments, 'nurses': nurses})
-        return render_template('dashboard_admin.html', **context,user=users)
+        return render_template('dashboard_admin.html', **context, user=users)
 
     # Doctor dashboard
     elif role == 'doctor':
@@ -229,8 +258,22 @@ def dashboard():
             flash('Doctor not found!')
             return redirect(url_for('index'))
 
-        doctor_appointments = [appt for appt in appointments.values() if appt['doctor'] == username]
-        context.update({'doctor': doctor, 'appointments': doctor_appointments})
+        doctor_appointments = [
+            appt for appt in appointments.values() if appt['doctor'] == username
+        ]
+        doctor_data = {
+            'doctor': doctor,
+            'appointments': doctor_appointments
+        }
+        # Adding patient details (COVID status, notes)
+        for appt in doctor_appointments:
+            patient = patients.get(appt['patient'])
+            if patient:
+                appt['patient_name'] = patient['name']
+                appt['patient_covid'] = patient.get('covid', 'False')
+                appt['patient_notes'] = patient.get('note', '')
+
+        context.update(doctor_data)
         return render_template('dashboard_doctor.html', **context)
 
     # Patient dashboard
@@ -241,7 +284,18 @@ def dashboard():
             return redirect(url_for('index'))
 
         # Fetch the appointment data for the patient
-        patient_appointments = [appointments[appt_id] for appt_id in patient.get("appointments", []) if appt_id in appointments]
+        patient_appointments = [
+            appointments[appt_id] for appt_id in patient.get("appointments", []) if appt_id in appointments
+        ]
+
+        # Add relevant details for each appointment
+        for appt in patient_appointments:
+            doctor = doctors.get(appt['doctor'])
+            if doctor:
+                appt['doctor_name'] = doctor['name']
+            appt['covid_status'] = patient.get('covid', 'False')
+            appt['patient_notes'] = patient.get('note', '')
+
         context.update({'patient': patient, 'appointments': patient_appointments})
         return render_template('dashboard_patient.html', **context)
 
@@ -253,6 +307,7 @@ def dashboard():
     # Unauthorized role or access
     flash('Unauthorized access!')
     return redirect(url_for('index'))
+
 
 
 # Patient registration route
@@ -287,64 +342,6 @@ def add_doctor():
         flash(f'Doctor {name} added successfully!')
         return redirect(url_for('dashboard'))
     return render_template('add_doctor.html')
-
-@app.route('/schedule_appointment', methods=['GET', 'POST'])
-def schedule_appointment():
-    # Ensure that the logged-in user is a patient
-    if session.get('role') != 'patient':
-        flash('Only patients can schedule appointments.')
-        return redirect(url_for('dashboard'))
-
-    patient_username = session.get('username')  # Get logged-in patient's username
-
-    # Check if the patient exists in the patients dictionary
-    if patient_username not in patients:
-        flash('Patient not found in the system.')
-        return redirect(url_for('dashboard'))
-
-    # Handle POST request (appointment creation)
-    if request.method == 'POST':
-        doctor_username = request.form['doctor']
-        date = request.form['date']
-        time = request.form['time']
-
-        # Validate doctor existence
-        if doctor_username not in doctors:
-            flash('Doctor not found!')
-            return redirect(url_for('schedule_appointment'))
-
-        # Check for conflicting appointment (same doctor, same date, same time)
-        for appt in appointments.values():
-            if appt['doctor'] == doctor_username and appt['date'] == date and appt['time'] == time:
-                flash(f'The doctor is already booked at {time} on {date}. Please choose another time.')
-                return redirect(url_for('schedule_appointment'))
-
-        # Create the appointment
-        appointment_id = len(appointments) + 1  # Generate a new appointment ID
-        appointment = {
-            'patient': patient_username,
-            'doctor': doctor_username,
-            'date': date,
-            'time': time
-        }
-        print(appointments)
-        # Store the appointment in the appointments dictionary
-        appointments[appointment_id] = appointment
-
-        # Optionally, add the appointment to the patient's list of appointments
-        if 'appointments' not in patients[patient_username]:
-            patients[patient_username]['appointments'] = []
-        patients[patient_username]['appointments'].append(appointments[appointment_id])
-
-        # Flash a success message
-        flash(f'Appointment successfully scheduled with Dr. {doctors[doctor_username]["name"]} on {date} at {time}')
-        
-        # Redirect back to the dashboard
-        return redirect(url_for('dashboard'))
-
-
-    # If it's a GET request, render the scheduling form
-    return render_template('schedule_appointment.html', doctors=doctors, patients=patients)
 
 @app.route('/edit_doctor/<username>', methods=['GET', 'POST'])
 def edit_doctor(username):
@@ -591,6 +588,63 @@ def manage_users():
 
     return render_template('manage_users.html', users=users_data)
 
+@app.route('/schedule_appointment', methods=['GET', 'POST'])
+def schedule_appointment():
+    # Ensure that the logged-in user is a patient
+    if session.get('role') != 'patient':
+        flash('Only patients can schedule appointments.')
+        return redirect(url_for('dashboard'))
+
+    patient_username = session.get('username')  # Get logged-in patient's username
+
+    # Check if the patient exists in the patients dictionary
+    if patient_username not in patients:
+        flash('Patient not found in the system.')
+        return redirect(url_for('dashboard'))
+
+    # Handle POST request (appointment creation)
+    if request.method == 'POST':
+        doctor_username = request.form['doctor']
+        date = request.form['date']
+        time = request.form['time']
+
+        # Validate doctor existence
+        if doctor_username not in doctors:
+            flash('Doctor not found!')
+            return redirect(url_for('schedule_appointment'))
+
+        # Check for conflicting appointment (same doctor, same date, same time)
+        for appt in appointments.values():
+            if appt['doctor'] == doctor_username and appt['date'] == date and appt['time'] == time:
+                flash(f'The doctor is already booked at {time} on {date}. Please choose another time.')
+                return redirect(url_for('schedule_appointment'))
+
+        # Create the appointment
+        appointment_id = str(len(appointments) + 1)  # Use a unique string-based ID for appointments
+        appointment = {
+            'id': appointment_id,
+            'patient': patient_username,
+            'doctor': doctor_username,
+            'date': date,
+            'time': time
+        }
+
+        # Store the appointment in the appointments dictionary
+        appointments[appointment_id] = appointment
+
+        # Add the appointment to the patient's list of appointments
+        if 'appointments' not in patients[patient_username]:
+            patients[patient_username]['appointments'] = []
+        patients[patient_username]['appointments'].append(appointment_id)
+
+        # Flash a success message
+        flash(f'Appointment successfully scheduled with Dr. {doctors[doctor_username]["name"]} on {date} at {time}')
+        
+        # Redirect back to the dashboard
+        return redirect(url_for('dashboard'))
+
+    # If it's a GET request, render the scheduling form with doctor options
+    return render_template('schedule_appointment.html', doctors=doctors,patients=patients)
 
 @app.route('/view_appointment/<int:appointment_id>', methods=['GET'])
 def view_appointment(appointment_id):
@@ -611,6 +665,43 @@ def view_appointment(appointment_id):
 
     # Render the view_appointment.html template with appointment details
     return render_template('view_appointment.html', appointment=appointment, patient=patient, doctor=doctor)
+
+# Function to handle appointment editing for patients
+@app.route('/edit_appointment/<appointment_id>', methods=['GET', 'POST'])
+def edit_appointment(appointment_id):
+    # Get the appointment data using the provided appointment_id
+    appointment = appointments.get(appointment_id)
+    
+    if not appointment:
+        flash('Appointment not found!')
+        return redirect(url_for('dashboard'))
+
+    # Fetch the patient data and verify the patient is logged in
+    patient = patients.get(session.get('username'))
+    if not patient or appointment['patient'] != patient['username']:
+        flash('Unauthorized access to this appointment.')
+        return redirect(url_for('dashboard'))
+
+    # Handle POST request to update appointment details
+    if request.method == 'POST':
+        # Allow the patient to reschedule the appointment
+        new_date = request.form['date']
+        new_time = request.form['time']
+
+        # Validate date and time fields (basic validation can be added)
+        if not new_date or not new_time:
+            flash('Both date and time are required!', 'error')
+            return render_template('edit_appointment.html', appointment=appointment)
+
+        # Update appointment details
+        appointment['date'] = new_date
+        appointment['time'] = new_time
+
+        flash('Appointment updated successfully!', 'success')
+        return redirect(url_for('dashboard'))
+
+    # Pass the appointment to the template for GET request
+    return render_template('edit_appointment.html', appointment=appointment)
 
 
 @app.route('/finish_appointment/<int:appointment_id>', methods=['POST'])

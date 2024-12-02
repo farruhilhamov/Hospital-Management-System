@@ -4,32 +4,124 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schedule Appointment</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 30px;
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: block;
+            color: #333;
+        }
+
+        select, input[type="date"], input[type="time"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+
+        .back-link a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-    <h1>Schedule Appointment</h1>
-    <form method="POST">
-        <label for="patient">Select Patient:</label>
-        <select name="patient" required>
-            {% for username, patient in patients.items() %}
-            <option value="{{ username }}">{{ patient.name }}</option>
-            {% endfor %}
-        </select><br>
+    <div class="container">
+        <h1>Schedule Appointment</h1>
 
-        <label for="doctor">Select Doctor:</label>
-        <select name="doctor" required>
-            {% for username, doctor in doctors.items() %}
-            <option value="{{ username }}">{{ doctor.name }} - {{ doctor.specialty }}</option>
-            {% endfor %}
-        </select><br>
+        <form method="POST">
+            <div class="form-group">
+                <label for="patient">Select Patient:</label>
+                <select name="patient" required>
+                    {% for username, patient in patients.items() %}
+                        <option value="{{ username }}">{{ patient.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <label for="date">Date:</label>
-        <input type="date" name="date" required><br>
+            <div class="form-group">
+                <label for="doctor">Select Doctor:</label>
+                <select name="doctor" required>
+                    {% for username, doctor in doctors.items() %}
+                        <option value="{{ username }}">{{ doctor.name }} - {{ doctor.specialty }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <label for="time">Time:</label>
-        <input type="time" name="time" required><br>
+            <div class="form-group">
+                <label for="date">Date:</label>
+                <input type="date" name="date" required>
+            </div>
 
-        <button type="submit">Schedule Appointment</button>
-    </form>
-    <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+            <div class="form-group">
+                <label for="time">Time:</label>
+                <input type="time" name="time" required>
+            </div>
+
+            <button type="submit">Schedule Appointment</button>
+        </form>
+
+        <div class="back-link">
+            <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+        </div>
+    </div>
 </body>
 </html>
