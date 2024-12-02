@@ -123,13 +123,16 @@
                     <td>
                         Age: {{ details.age }}<br>
                         Gender: {{ details.gender }}<br>
-                        Role: {{ details.role }}
+                        Role: {{ details.role }}<br>
+                        {% if user_type == 'patients' %}
+                        COVID Status: {{ details.covid }}<br>
+                        {% endif %}
+                        Note: {{ details.note }}
                     </td>
                     <td>
                         <form method="POST" action="{{ url_for('manage_users') }}">
-                            <!-- <input type="hidden" name="username" value="{{ username }}">
                             <input type="hidden" name="user_type" value="{{ user_type }}">
-                            <button type="submit" name="action" value="edit">Edit</button> -->
+                            <input type="hidden" name="username" value="{{ username }}">
                             <button type="submit" name="action" value="delete" onclick="return confirm('Are you sure you want to delete this user?');">Delete</button>
                         </form>
                     </td>
@@ -165,6 +168,10 @@
                 <option value="phone">Phone</option>
                 <option value="address">Address</option>
                 <option value="medical_history">Medical History</option>
+                <option value="note">Note</option>
+                {% if user_type == 'patients' %}
+                    <option value="covid">COVID Status (True/False)</option>
+                {% endif %}
             </select>
 
             <label for="new_value">New Value</label>

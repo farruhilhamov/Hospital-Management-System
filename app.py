@@ -2,23 +2,38 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
-# Sample data
 users = {
     "admin": {"password": generate_password_hash("admin123"), "role": "admin"},
     "doctor1": {"password": generate_password_hash("doctor123"), "role": "doctor"},
     "patient1": {"password": generate_password_hash("patient123"), "role": "patient"},
-    "headnurse1":{"password": generate_password_hash("nurse123"), "role": "head_nurse"}
+    "headnurse1": {"password": generate_password_hash("nurse123"), "role": "head_nurse"}
 }
 
 patients = {
-    "patient1": {"name": "John", "age": 30, "gender": "Male", "appointments": [1]}
+    "patient1": {
+        "name": "John",
+        "age": 30,
+        "gender": "Male",
+        "appointments": [1],
+        "note": "Patient requires regular check-ups.",
+        "covid": False  # COVID status for patient
+    }
 }
 
 doctors = {
-    "doctor1": {"name": "Dr. Smith", "specialty": "Cardiology"}
+    "doctor1": {
+        "name": "Dr. Smith",
+        "specialty": "Cardiology",
+        "note": "Senior Cardiologist."
+    }
 }
 
-nurses = {username: user for username, user in users.items() if user.get('role') == 'head_nurse'} or {}
+nurses = {
+    "headnurse1": {
+        "name": "Nurse Jane",
+        "note": "Head Nurse in the ICU."
+    }
+}
 
 appointments = {
     1: {
@@ -29,6 +44,7 @@ appointments = {
         "status": "scheduled"
     }
 }
+
 
 
 app = Flask(__name__)
@@ -111,9 +127,6 @@ def profile(username):
     # Handle unauthorized access
     flash('Unauthorized access to this profile.')
     return redirect(url_for('dashboard'))
-
-
-
 
 # Login route
 @app.route('/login', methods=['GET', 'POST'])
@@ -288,18 +301,21 @@ def schedule_appointment():
 
 @app.route('/edit_doctor/<username>', methods=['GET', 'POST'])
 def edit_doctor(username):
+    # Fetch the doctor from the 'doctors' dictionary using the username
     doctor = doctors.get(username)
     if not doctor:
         flash(f'Doctor with username {username} not found!', 'error')
         return redirect(url_for('dashboard'))
 
+    # Handle the form submission (POST request)
     if request.method == 'POST':
-        # You can update the doctor's information here
+        # Update the doctor's details from the form
         doctor['name'] = request.form['name']
         doctor['specialty'] = request.form['specialty']
         flash(f'Doctor {doctor["name"]} updated successfully!', 'success')
         return redirect(url_for('dashboard'))
-    
+
+    # If the request method is GET, render the form to edit the doctor details
     return render_template('edit_doctor.html', doctor=doctor)
 
 @app.route('/delete_doctor/<username>', methods=['POST'])
@@ -318,6 +334,11 @@ def delete_doctor(username):
     return redirect(url_for('dashboard'))
 @app.route('/edit_patient/<username>', methods=['GET', 'POST'])
 def edit_patient(username):
+    # Check if the current user is an admin or nurse
+    if session.get('role') not in ['admin', 'nurse']:
+        flash('You do not have permission to access this page.', 'error')
+        return redirect(url_for('dashboard'))
+
     # Fetch the patient from the 'patients' dictionary using the username
     patient = patients.get(username)
     if not patient:
@@ -330,11 +351,24 @@ def edit_patient(username):
         patient['name'] = request.form['name']
         patient['age'] = request.form['age']
         patient['gender'] = request.form['gender']
+        patient['note'] = request.form['note']
+        
+        # Update COVID status only if the field is provided and is "True" or "False"
+        if 'covid' in request.form:
+            covid_status = request.form['covid']
+            if covid_status.lower() in ['true', 'false']:
+                patient['covid'] = covid_status.lower() == 'true'
+            else:
+                flash(f'Invalid COVID status for patient {username}. It should be "True" or "False".', 'error')
+                return redirect(url_for('edit_patient', username=username))
+
         flash(f'Patient {patient["name"]} updated successfully!', 'success')
         return redirect(url_for('dashboard'))
 
     # If the request method is GET, render the form to edit the patient details
     return render_template('edit_patient.html', patient=patient)
+
+
 
 @app.route('/delete_patient/<username>', methods=['POST'])
 def delete_patient(username):
@@ -378,20 +412,18 @@ def add_nurse():
 # Delete Nurse Route
 @app.route('/delete_nurse/<username>', methods=['POST'])
 def delete_nurse(username):
-    if session.get('role') != 'admin':
-        flash('Only administrators can manage nurses.')
+    # Check if the nurse exists in the dictionary
+    nurse = nurses.get(username)
+    if not nurse:
+        flash(f'Nurse with username {username} not found!', 'error')
         return redirect(url_for('dashboard'))
 
-    # Check if the nurse exists
-    if username not in nurses:
-        flash(f'Head Nurse {username} not found!')
-        return redirect(url_for('manage_nurses'))
-
-    # Remove the nurse
+    # Delete the nurse from the 'nurses' dictionary
     del nurses[username]
-    del users[username]
-    flash(f'Head Nurse {username} deleted successfully!')
-    return redirect(url_for('manage_nurses'))
+    flash(f'Nurse {nurse["name"]} deleted successfully!', 'success')
+
+    # Redirect back to the dashboard
+    return redirect(url_for('dashboard'))
 
 # Route to manage nurses (admin-only)
 @app.route('/manage_nurses', methods=['GET', 'POST'])
@@ -428,19 +460,19 @@ def manage_nurses():
 
 @app.route('/edit_nurse/<username>', methods=['GET', 'POST'])
 def edit_nurse(username):
-    # Fetch the nurse from the 'nurses' dictionary
+    # Fetch the nurse from the 'nurses' dictionary using the username
     nurse = nurses.get(username)
     if not nurse:
-        flash(f'Head Nurse {username} not found!', 'error')
-        return redirect(url_for('manage_nurses'))
+        flash(f'Nurse with username {username} not found!', 'error')
+        return redirect(url_for('dashboard'))
 
     # Handle the form submission (POST request)
     if request.method == 'POST':
         # Update the nurse's details from the form
         nurse['name'] = request.form['name']
         nurse['specialty'] = request.form['specialty']
-        flash(f'Head Nurse {nurse["name"]} updated successfully!', 'success')
-        return redirect(url_for('manage_nurses'))
+        flash(f'Nurse {nurse["name"]} updated successfully!', 'success')
+        return redirect(url_for('dashboard'))
 
     # If the request method is GET, render the form to edit the nurse details
     return render_template('edit_nurse.html', nurse=nurse)
@@ -478,7 +510,7 @@ def manage_users():
 
     if request.method == 'POST':
         # Handle the edit user functionality
-        user_type = request.form.get('user_type')  # E.g., 'nurses'
+        user_type = request.form.get('user_type')  # E.g., 'patients', 'doctors', 'nurses'
         username = request.form.get('username')  # Username of the user to edit
         field = request.form.get('field')  # Field to edit (e.g., 'name', 'specialty')
         new_value = request.form.get('new_value')  # New value to update
@@ -488,10 +520,25 @@ def manage_users():
             flash("Incomplete data provided for editing.")
             return redirect(url_for('manage_users'))
 
-        # Update the corresponding user's data (only allows nurse edits here)
-        if user_type == 'nurses' and username in nurses:
-            nurses[username][field] = new_value
-            flash(f'Nurse {username} updated successfully!')
+        # Update the corresponding user's data
+        if user_type == 'patients' and username in patients:
+            if field in patients[username]:
+                patients[username][field] = new_value
+                flash(f'Patient {username} updated successfully!')
+            else:
+                flash(f'Field {field} not found for Patient {username}.')
+        elif user_type == 'doctors' and username in doctors:
+            if field in doctors[username]:
+                doctors[username][field] = new_value
+                flash(f'Doctor {username} updated successfully!')
+            else:
+                flash(f'Field {field} not found for Doctor {username}.')
+        elif user_type == 'nurses' and username in nurses:
+            if field in nurses[username]:
+                nurses[username][field] = new_value
+                flash(f'Nurse {username} updated successfully!')
+            else:
+                flash(f'Field {field} not found for Nurse {username}.')
         else:
             flash(f'{user_type.capitalize()} {username} not found or cannot be edited.')
 
