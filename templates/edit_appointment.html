@@ -5,31 +5,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Appointment</title>
 </head>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f4f4f9;
+    }
+
+    h1, label {
+        color: #333;
+    }
+
+    form {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        max-width: 400px;
+        margin: 20px auto;
+    }
+
+    label {
+        display: block;
+        margin: 10px 0 5px;
+        font-weight: bold;
+    }
+
+    input, button {
+        width: 100%;
+        padding: 10px;
+        margin: 5px 0 15px 0;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+
+    button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background-color: #45a049;
+    }
+
+    a {
+        display: inline-block;
+        margin-top: 10px;
+        text-decoration: none;
+        color: #007BFF;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+</style>
 <body>
     <h1>Edit Appointment</h1>
     <form method="POST">
-        <label for="patient">Select Patient:</label>
-        <select name="patient" required>
-            {% for username, patient in patients.items() %}
-            <option value="{{ username }}" {% if username == appointment.patient %}selected{% endif %}>{{ patient.name }}</option>
-            {% endfor %}
-        </select><br>
-
-        <label for="doctor">Select Doctor:</label>
-        <select name="doctor" required>
-            {% for username, doctor in doctors.items() %}
-            <option value="{{ username }}" {% if username == appointment.doctor %}selected{% endif %}>{{ doctor.name }} - {{ doctor.specialty }}</option>
-            {% endfor %}
-        </select><br>
-
         <label for="date">Date:</label>
-        <input type="date" name="date" value="{{ appointment.date }}" required><br>
+        <input type="date" id="date" name="date" value="{{ appointment['date'] }}" required>
 
         <label for="time">Time:</label>
-        <input type="time" name="time" value="{{ appointment.time }}" required><br>
+        <input type="time" id="time" name="time" value="{{ appointment['time'] }}" required>
 
-        <button type="submit">Update Appointment</button>
+        <button type="submit">Save Changes</button>
     </form>
-    <a href="{{ url_for('view_appointments') }}">Back to Appointments</a>
+    <a href="{{ url_for('dashboard') }}">Cancel</a>
 </body>
 </html>

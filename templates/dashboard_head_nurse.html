@@ -1,87 +1,66 @@
-<!-- dashboard_head_nurse.html -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Head Nurse Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+        }
+
+        h1, h2 {
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        table th {
+            background-color: #f2f2f2;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 20px;
-        background-color: #f4f4f9;
-    }
-
-    h1, h2, h3 {
-        color: #333;
-    }
-
-    .profile, .actions {
-        background-color: #fff;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        max-width: 800px;
-        margin: 20px auto;
-    }
-
-    .actions form {
-        margin-bottom: 15px;
-    }
-
-    label {
-        display: block;
-        margin: 10px 0 5px;
-        font-weight: bold;
-    }
-
-    input, select, textarea, button {
-        width: 100%;
-        padding: 10px;
-        margin: 5px 0 15px 0;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-    }
-
-    button {
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        cursor: pointer;
-    }
-
-    button:hover {
-        background-color: #45a049;
-    }
-
-    a {
-        display: inline-block;
-        margin-top: 20px;
-        text-decoration: none;
-        color: #007BFF;
-    }
-
-    a:hover {
-        text-decoration: underline;
-    }
-
-    .messages {
-        background-color: #f8d7da;
-        padding: 10px;
-        margin-bottom: 20px;
-        border: 1px solid #f5c6cb;
-        color: #721c24;
-        border-radius: 5px;
-    }
-</style>
 <body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="messages">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+
     <h1>Welcome, Head Nurse!</h1>
 
     <h2>All Appointments:</h2>
     {% if appointments %}
-        <table border="1">
+        <table>
             <thead>
                 <tr>
                     <th>Patient</th>
@@ -96,15 +75,15 @@
             <tbody>
                 {% for appt in appointments %}
                     <tr>
-                        <td>{{ appt['patient_name'] }}</td>
-                        <td>{{ appt['doctor_name'] }}</td>
-                        <td>{{ appt['date'] }}</td>
-                        <td>{{ appt['time'] }}</td>
-                        <td>{{ appt['covid_status'] }}</td>
-                        <td>{{ appt['patient_notes'] }}</td>
+                        <td>{{ appt.patient_name }}</td>
+                        <td>{{ appt.doctor_name }}</td>
+                        <td>{{ appt.date }}</td>
+                        <td>{{ appt.time }}</td>
+                        <td>{{ appt.covid_status }}</td>
+                        <td>{{ appt.patient_notes }}</td>
                         <td>
-                            <form method="POST" action="{{ url_for('update_appointment', appt_id=appt['id']) }}">
-                                <input type="submit" value="Edit Appointment" />
+                            <form method="GET" action="{{ url_for('edit_appointment', appointment_id=appt.id) }}">
+                                <button>Edit</button>
                             </form>
                         </td>
                     </tr>
@@ -114,8 +93,27 @@
     {% else %}
         <p>No appointments to display.</p>
     {% endif %}
+    <h2>Assign Bed to Patient</h2>
+    <form method="POST" action="{{ url_for('assign_bed') }}">
+        <label for="patient_username">Patient:</label>
+        <select id="patient_username" name="patient_username" required>
+            {% for patient in patients %}
+                <option value="{{ patient.username }}">{{ patient.name }} ({{ patient.username }})</option>
+            {% endfor %}
+        </select>
+        
+        <label for="hospital_name">Hospital:</label>
+        <select id="hospital_name" name="hospital_name" required>
+            {% for hospital_name, hospital_data in hospitals.items() %}
+                <option value="{{ hospital_name }}">{{ hospital_data['name'] }}</option>
+            {% endfor %}
+        </select>
+        
+        <button type="submit">Assign Bed</button>
+    </form>
 
-    <hr>
+
+
     <a href="{{ url_for('logout') }}">Logout</a>
 </body>
 </html>

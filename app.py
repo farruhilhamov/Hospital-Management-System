@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
+# Data structures
+
 users = {
     "admin": {"password": generate_password_hash("admin123"), "role": "admin"},
     "doctor1": {"password": generate_password_hash("doctor123"), "role": "doctor"},
@@ -45,7 +47,22 @@ appointments = {
     }
 }
 
+# Hospital data structure
+hospitals = {
+    "hospital1": {
+        "name": "Hospital 1",
+        "total_beds": 20,
+        "beds": [None for _ in range(20)]  # Initialize all beds as unoccupied
+    },
+    "hospital2": {
+        "name": "Hospital 2",
+        "total_beds": 10,
+        "beds": [None for _ in range(10)]  # Initialize all beds as unoccupied
+    }
+}
 
+
+# Web routes and API
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -239,17 +256,14 @@ def dashboard():
         flash('Please log in to access the dashboard.')
         return redirect(url_for('login'))
 
-    # Base context to pass to templates
-    context = {
-        'doctors': doctors,
-        'patients': patients,
-    }
+    # Context initialization
+    context = {}
 
     # Admin dashboard
     if role == 'admin':
-        nurses = {username: user for username, user in users.items() if user.get('role') == 'head_nurse'}
+        nurses = {uname: user for uname, user in users.items() if user.get('role') == 'head_nurse'}
         context.update({'appointments': appointments, 'nurses': nurses})
-        return render_template('dashboard_admin.html', **context, user=users)
+        return render_template('dashboard_admin.html', **context)
 
     # Doctor dashboard
     elif role == 'doctor':
@@ -261,11 +275,7 @@ def dashboard():
         doctor_appointments = [
             appt for appt in appointments.values() if appt['doctor'] == username
         ]
-        doctor_data = {
-            'doctor': doctor,
-            'appointments': doctor_appointments
-        }
-        # Adding patient details (COVID status, notes)
+
         for appt in doctor_appointments:
             patient = patients.get(appt['patient'])
             if patient:
@@ -273,7 +283,7 @@ def dashboard():
                 appt['patient_covid'] = patient.get('covid', 'False')
                 appt['patient_notes'] = patient.get('note', '')
 
-        context.update(doctor_data)
+        context.update({'doctor': doctor, 'appointments': doctor_appointments,'patients':patients})
         return render_template('dashboard_doctor.html', **context)
 
     # Patient dashboard
@@ -283,12 +293,10 @@ def dashboard():
             flash('Patient not found!')
             return redirect(url_for('index'))
 
-        # Fetch the appointment data for the patient
         patient_appointments = [
             appointments[appt_id] for appt_id in patient.get("appointments", []) if appt_id in appointments
         ]
 
-        # Add relevant details for each appointment
         for appt in patient_appointments:
             doctor = doctors.get(appt['doctor'])
             if doctor:
@@ -301,14 +309,38 @@ def dashboard():
 
     # Head Nurse dashboard
     elif role == 'head_nurse':
-        context.update({'appointments': appointments})
+        nurse_appointments = []
+
+        for appt_id, appt in appointments.items():
+            patient = patients.get(appt['patient'])
+            doctor = doctors.get(appt['doctor'])
+            
+            # Ensure both patient and doctor exist for the appointment
+            if patient and doctor:
+                formatted_appt = {
+                    'id': appt_id,
+                    'patient_name': patient['name'],
+                    'doctor_name': doctor['name'],
+                    'date': appt.get('date', 'N/A'),
+                    'time': appt.get('time', 'N/A'),
+                    'covid_status': patient.get('covid', 'False'),
+                    'patient_notes': patient.get('note', ''),
+                    'patient_username': appt['patient']
+                }
+                nurse_appointments.append(formatted_appt)
+
+        # Fetch all patients for the dropdown list
+        patient_usernames = [
+            {'username': username, 'name': patient['name']}
+            for username, patient in patients.items()
+        ]
+
+        context.update({'appointments': nurse_appointments, 'hospitals': hospitals, 'patients': patient_usernames})
         return render_template('dashboard_head_nurse.html', **context)
 
     # Unauthorized role or access
     flash('Unauthorized access!')
     return redirect(url_for('index'))
-
-
 
 # Patient registration route
 @app.route('/register_patient', methods=['GET', 'POST'])
@@ -411,8 +443,6 @@ def edit_patient(username):
 
     # If the request method is GET, render the form to edit the patient details
     return render_template('edit_patient.html', patient=patient)
-
-
 
 @app.route('/delete_patient/<username>', methods=['POST'])
 def delete_patient(username):
@@ -666,43 +696,51 @@ def view_appointment(appointment_id):
     # Render the view_appointment.html template with appointment details
     return render_template('view_appointment.html', appointment=appointment, patient=patient, doctor=doctor)
 
-# Function to handle appointment editing for patients
 @app.route('/edit_appointment/<appointment_id>', methods=['GET', 'POST'])
 def edit_appointment(appointment_id):
-    # Get the appointment data using the provided appointment_id
-    appointment = appointments.get(appointment_id)
-    
+    # Get the role of the logged-in user
+    username = session.get('username')
+    role = session.get('role')
+
+    # Fetch the appointment by ID
+    appointment = appointments.get(int(appointment_id))
     if not appointment:
         flash('Appointment not found!')
         return redirect(url_for('dashboard'))
 
-    # Fetch the patient data and verify the patient is logged in
-    patient = patients.get(session.get('username'))
-    if not patient or appointment['patient'] != patient['username']:
-        flash('Unauthorized access to this appointment.')
+    # Allow nurses or the patient associated with the appointment
+    print(username," is ",role)
+    if role == 'patient':
+        if appointment['patient'] != username:
+            flash('Unauthorized access to this appointment.')
+            return redirect(url_for('dashboard'))
+    elif role == 'head_nurse':
+        # Nurses can edit any appointment, no extra checks
+        return render_template('edit_appointment.html', appointment=appointment)
+    else:
+        flash('Unauthorized role!')
         return redirect(url_for('dashboard'))
 
     # Handle POST request to update appointment details
     if request.method == 'POST':
-        # Allow the patient to reschedule the appointment
-        new_date = request.form['date']
-        new_time = request.form['time']
+        # Get new date and time from the form
+        new_date = request.form.get('date')
+        new_time = request.form.get('time')
 
-        # Validate date and time fields (basic validation can be added)
+        # Validate input
         if not new_date or not new_time:
             flash('Both date and time are required!', 'error')
             return render_template('edit_appointment.html', appointment=appointment)
 
-        # Update appointment details
+        # Update the appointment
         appointment['date'] = new_date
         appointment['time'] = new_time
 
         flash('Appointment updated successfully!', 'success')
         return redirect(url_for('dashboard'))
 
-    # Pass the appointment to the template for GET request
+    # Render the edit form for GET request
     return render_template('edit_appointment.html', appointment=appointment)
-
 
 @app.route('/finish_appointment/<int:appointment_id>', methods=['POST'])
 def finish_appointment(appointment_id):
@@ -737,6 +775,81 @@ def finish_appointment(appointment_id):
 
     flash(f'Appointment with {patients[patient_username]["name"]} on {appointment["date"]} at {appointment["time"]} has been finished.')
     return redirect(url_for('dashboard'))
+
+@app.route('/view_bed', methods=['GET'])
+def view_bed():
+    username = session.get('username')
+    role = session.get('role')
+
+    if not username or (role != 'patient' and role != 'head_nurse'):
+        flash('Unauthorized access!')
+        print('Unauthorized access!')
+        return redirect(url_for('dashboard'))
+
+    assigned_bed = None
+    assigned_hospital = None
+
+    # Search for patient's bed assignment
+    for hospital_name, hospital_data in hospitals.items():
+        if username in hospital_data['beds']:
+            assigned_bed = hospital_data['beds'].index(username) + 1  # 1-based index
+            assigned_hospital = hospital_data['name']
+            break
+
+    if assigned_bed:
+        return render_template('view_bed.html', bed_number=assigned_bed, hospital=assigned_hospital)
+    else:
+        flash("You are not assigned to any bed.")
+        return redirect(url_for('dashboard'))
+
+@app.route('/assign_bed', methods=['POST'])
+def assign_bed():
+    username = session.get('username')
+    role = session.get('role')
+
+    # Ensure the user is logged in and is a head nurse
+    if not username or role != 'head_nurse':
+        flash('Unauthorized access!')
+        return redirect(url_for('dashboard'))
+
+    # Get patient username and hospital from the form
+    patient_username = request.form.get('patient_username')
+    hospital_name = request.form.get('hospital_name')
+
+    # Validate patient username
+    if not patient_username or patient_username not in patients:
+        flash("Invalid patient username.")
+        return redirect(url_for('dashboard'))
+
+    patient = patients[patient_username]
+
+    # Check if the patient has COVID
+    if not patient.get('covid', False):
+        flash(f"Cannot assign bed to {patient_username}: COVID status is False.")
+        return redirect(url_for('dashboard'))
+
+    # Validate hospital name
+    if not hospital_name or hospital_name not in hospitals:
+        flash("Invalid hospital name.")
+        return redirect(url_for('dashboard'))
+
+    hospital = hospitals[hospital_name]
+
+    # Try to assign the first available bed
+    try:
+        bed_index = hospital['beds'].index(None)  # Find the first unoccupied bed
+        hospital['beds'][bed_index] = patient_username  # Assign the bed to the patient
+        flash(f"Bed {bed_index + 1} assigned to {patient_username} in {hospital['name']}.")
+        print(f"Bed {bed_index + 1} assigned to {patient_username} in {hospital['name']}.")
+
+    except ValueError:  # If no beds are available
+        flash(f"No available beds in {hospital['name']}.")
+        return redirect(url_for('dashboard'))
+
+    # Redirect back to the dashboard after successful assignment
+    return redirect(url_for('dashboard'))
+
+
 
 # Run the app
 if __name__ == '__main__':
