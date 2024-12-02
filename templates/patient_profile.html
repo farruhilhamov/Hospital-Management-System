@@ -110,11 +110,25 @@
             <li>
                 Appointment with {{ appt['patient'] }} on {{ appt['date'] }} at {{ appt['time'] }}
                 {% if session['role'] == 'doctor' %}
+                <form method="POST">
+                    <label for="note">Notes:</label>
+                    <textarea id="note" name="note" rows="4" cols="50">{{ notes }}</textarea><br><br>
+                
+                    <label for="covid">COVID Status:</label>
+                    <select name="covid" id="covid">
+                        <option value="True" {% if covid_status == 'True' %}selected{% endif %}>Positive</option>
+                        <option value="False" {% if covid_status == 'False' %}selected{% endif %}>Negative</option>
+                    </select><br><br>
+                
+                    <button type="submit">Save Changes</button>
+                </form>                
+                
                 <form method="POST" action="{{ url_for('finish_appointment', appointment_id=appt['id']) }}">
-                    <button type="submit">Finish Appointment</button>
+                    <button type="submit", style="background-color: rgb(211, 45, 122);">Finish Appointment</button>
                 </form>
                 {% endif %}
             </li>
+            
             {% endfor %}
         </ul>
         {% elif session['role'] == 'head_nurse' %}

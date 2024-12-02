@@ -22,7 +22,7 @@ patients = {
 
 doctors = {
     "doctor1": {
-        "name": "Dr. Smith",
+        "name": "Smith",
         "specialty": "Cardiology",
         "note": "Senior Cardiologist."
     }
@@ -65,7 +65,7 @@ def not_found(error):
     return redirect(url_for('dashboard'))
 
 
-@app.route('/user/<username>')
+@app.route('/user/<username>', methods=['GET', 'POST'])
 def profile(username):
     # Look up the user (could be a patient or doctor) by username
     user = patients.get(username) or doctors.get(username)
@@ -78,29 +78,71 @@ def profile(username):
     # Get the role of the logged-in user from the session
     role = session.get('role')
 
-    # Admin can access all user data
+    # Admin can access all user data, including all appointments, notes, and COVID status
     if role == 'admin':
         user_data = {
             "user": user,
             "appointments": [],
             "doctors": doctors,
             "nurses": nurses,
+            "notes": user.get('note', ''),
+            "covid_status": user.get('covid', 'False'),
         }
 
-    # Fetch patient-specific appointments
+        # Fetch all appointments if user is a patient
+        if username in patients:
+            patient_appointments = user.get('appointments', [])
+            user_data["appointments"] = [
+                {
+                    "id": appt_id,
+                    **appointments.get(appt_id, {})
+                }
+                for appt_id in patient_appointments if appt_id in appointments
+            ]
+        return render_template('patient_profile.html', **user_data)
+
+    # Fetch patient-specific appointments, notes, and COVID status for doctors, head nurses, and admins
     if role in ['admin', 'doctor', 'head_nurse']:
         patient_appointments = user.get('appointments', [])
-        user_data["appointments"] = [
-            {
-                "id": appt_id,
-                **appointments.get(appt_id, {})
-            }
-            for appt_id in patient_appointments if appt_id in appointments
-        ]
+        user_data = {
+            "user": user,
+            "appointments": [
+                {
+                    "id": appt_id,
+                    **appointments.get(appt_id, {})
+                }
+                for appt_id in patient_appointments if appt_id in appointments
+            ],
+            "notes": user.get('note', ''),
+            "covid_status": user.get('covid', 'False'),
+        }
+
+        # Handle doctor POST request to update notes and covid status
+        if request.method == 'POST' and role == 'doctor' and username in patients:
+            note = request.form.get('note')
+            covid_status = request.form.get('covid')
+
+            # Debugging: Print the values received
+            print(f"Received Note: {note}, Received COVID Status: {covid_status}")
+
+            # Update the patient's notes and COVID status
+            if note:
+                user['note'] = note
+
+            # Ensure covid_status is properly handled
+            if covid_status in ['True', 'False']:
+                # Debugging: Ensure the value of covid_status is correct
+                print(f"Updated COVID Status: {covid_status}")
+                user['covid'] = covid_status == 'True'  # Convert to boolean
+
+            flash(f'Patient {username} updated successfully!', 'success')
+            return redirect(url_for('profile', username=username))
 
         return render_template('patient_profile.html', **user_data)
 
-    # Doctors can view patient details and their appointments
+
+
+    # Doctors can view patient details and their appointments if the user is a patient
     elif role == 'doctor' and username in patients:
         patient_appointments = user.get('appointments', [])
         detailed_appointments = [
@@ -111,6 +153,8 @@ def profile(username):
             user=user,
             appointments=detailed_appointments,
             doctors=doctors,
+            notes=user.get('note', ''),
+            covid_status=user.get('covid', 'False'),
         )
 
     # Head nurses can view patient details and appointments related to the user
@@ -122,11 +166,14 @@ def profile(username):
             doctors=doctors,
             nurses=nurses,
             appointments=nurse_appointments,
+            notes=user.get('note', ''),
+            covid_status=user.get('covid', 'False'),
         )
 
     # Handle unauthorized access
     flash('Unauthorized access to this profile.')
     return redirect(url_for('dashboard'))
+
 
 # Login route
 @app.route('/login', methods=['GET', 'POST'])
