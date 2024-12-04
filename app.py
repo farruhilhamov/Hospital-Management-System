@@ -78,6 +78,7 @@ def index():
 
 @app.errorhandler(404)
 def not_found(error):
+    """This function returns error response template for users"""
     flash('The requested resource was not found.')
     return redirect(url_for('dashboard'))
 
@@ -248,7 +249,7 @@ def logout():
 
 
 @app.route('/dashboard', methods=['GET', 'POST'])
-def dashboard():
+def dashboard():    
     username = session.get('username')
     role = session.get('role')
 
@@ -262,7 +263,7 @@ def dashboard():
     # Admin dashboard
     if role == 'admin':
         nurses = {uname: user for uname, user in users.items() if user.get('role') == 'head_nurse'}
-        context.update({'appointments': appointments, 'nurses': nurses})
+        context.update({'appointments': appointments, 'nurses': nurses,'doctors':doctors,'patients':patients})
         return render_template('dashboard_admin.html', **context)
 
     # Doctor dashboard
