@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
     <title>{{ doctor.name }}'s Dashboard</title>
     <style>
         body {
@@ -104,6 +105,24 @@
                 {% endif %}
             </ul>
         </div>
+        <h2>Assign Bed to Patient</h2>
+        <form method="POST" action="{{ url_for('assign_bed') }}">
+            <label for="patient_username">Patient:</label>
+            <select id="patient_username" name="patient_username" required>
+                {% for patient in patients_list %}
+                    <option value="{{ patient.username }}">{{ patient.name }} ({{ patient.username }})</option>
+                {% endfor %}
+            </select>
+            
+            <label for="hospital_name">Hospital:</label>
+            <select id="hospital_name" name="hospital_name" required>
+                {% for hospital_name, hospital_data in hospitals.items() %}
+                    <option value="{{ hospital_name }}">{{ hospital_data['name'] }}</option>
+                {% endfor %}
+            </select>
+            
+            <button type="submit">Assign Bed</button>
+        </form>
 
         <a href="{{ url_for('index') }}" class="back-button">Back to Home</a>
             </tbody>

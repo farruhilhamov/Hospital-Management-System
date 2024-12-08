@@ -75,13 +75,11 @@ def index():
     role = session.get('role', None)
     return render_template('index.html', username=username, role=role, current_year=current_year)
 
-
 @app.errorhandler(404)
 def not_found(error):
     """This function returns error response template for users"""
     flash('The requested resource was not found.')
     return redirect(url_for('dashboard'))
-
 
 @app.route('/user/<username>', methods=['GET', 'POST'])
 def profile(username):
@@ -220,8 +218,6 @@ def patient_details(username):
     flash('Unauthorized access to this profile.')
     return redirect(url_for('dashboard'))
 
-
-
 # Login route
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -246,7 +242,6 @@ def logout():
     session.clear()
     flash('You have been logged out.')
     return redirect(url_for('index'))
-
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():    
@@ -277,6 +272,13 @@ def dashboard():
             appt for appt in appointments.values() if appt['doctor'] == username
         ]
 
+        # Fetch all patients for the dropdown list
+        patient_usernames = [
+            {'username': username, 'name': patient['name']}
+            for username, patient in patients.items() if patient.get('covid',False)
+        ]
+
+
         for appt in doctor_appointments:
             patient = patients.get(appt['patient'])
             if patient:
@@ -284,7 +286,13 @@ def dashboard():
                 appt['patient_covid'] = patient.get('covid', 'False')
                 appt['patient_notes'] = patient.get('note', '')
 
-        context.update({'doctor': doctor, 'appointments': doctor_appointments,'patients':patients})
+        context.update({
+            'doctor': doctor,
+            'appointments': doctor_appointments,
+            'patients_list': patient_usernames,
+            'patients':patients,
+            'hospitals': hospitals
+            })
         return render_template('dashboard_doctor.html', **context)
 
     # Patient dashboard
@@ -333,7 +341,7 @@ def dashboard():
         # Fetch all patients for the dropdown list
         patient_usernames = [
             {'username': username, 'name': patient['name']}
-            for username, patient in patients.items()
+            for username, patient in patients.items() if patient.get('covid',False)
         ]
 
         context.update({'appointments': nurse_appointments, 'hospitals': hospitals, 'patients': patient_usernames})
@@ -411,8 +419,8 @@ def delete_doctor(username):
     return redirect(url_for('dashboard'))
 @app.route('/edit_patient/<username>', methods=['GET', 'POST'])
 def edit_patient(username):
-    # Check if the current user is an admin or nurse
-    if session.get('role') not in ['admin', 'nurse']:
+    # Check if the current user is an admin, nurse or doctor
+    if session.get('role') not in ['admin', 'nurse', 'doctor']:
         flash('You do not have permission to access this page.', 'error')
         return redirect(url_for('dashboard'))
 
@@ -443,7 +451,7 @@ def edit_patient(username):
         return redirect(url_for('dashboard'))
 
     # If the request method is GET, render the form to edit the patient details
-    return render_template('edit_patient.html', patient=patient)
+    return render_template('edit_patient.html', patient=patient,hospitals=hospitals)
 
 @app.route('/delete_patient/<username>', methods=['POST'])
 def delete_patient(username):
@@ -551,7 +559,6 @@ def edit_nurse(username):
 
     # If the request method is GET, render the form to edit the nurse details
     return render_template('edit_nurse.html', nurse=nurse)
-
 
 @app.route('/manage_doctors', methods=['GET', 'POST'])
 def manage_doctors():
@@ -808,8 +815,8 @@ def assign_bed():
     username = session.get('username')
     role = session.get('role')
 
-    # Ensure the user is logged in and is a head nurse
-    if not username or role != 'head_nurse':
+    # Ensure the user is logged in and is a head nurse, doctor
+    if not username or role not in ('head_nurse','doctor'):
         flash('Unauthorized access!')
         return redirect(url_for('dashboard'))
 
