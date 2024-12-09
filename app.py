@@ -54,7 +54,7 @@ patients = {
         "note": "Patient requires regular check-ups.",
         "covid": False,
         "hospital": None,  # Assigned during registration
-        "district": None   # Assigned during registration
+        "district": "district1"   # Assigned during registration
     }
 }
 

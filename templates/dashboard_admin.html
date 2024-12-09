@@ -133,7 +133,7 @@
 <body>
     <div class="container">
         <h1>Admin Dashboard</h1>
-
+    
         {% with messages = get_flashed_messages() %}
         {% if messages %}
             <div class="flash-message">
@@ -143,7 +143,7 @@
             </div>
         {% endif %}
         {% endwith %}
-
+    
         <!-- Manage Doctors Section -->
         <div class="card">
             <h2>Manage Doctors</h2>
@@ -152,6 +152,7 @@
                     <tr>
                         <th>Doctor Name</th>
                         <th>Specialty</th>
+                        <th>District</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -160,60 +161,58 @@
                         <tr>
                             <td>{{ doctor.name }}</td>
                             <td>{{ doctor.specialty }}</td>
+                            <td>{{ doctor.district or "Not Assigned" }}</td>
                             <td>
                                 <a href="{{ url_for('profile', username=username) }}">View</a> |
                                 <a href="{{ url_for('edit_doctor', username=username) }}">Edit</a> |
                                 <form action="{{ url_for('delete_doctor', username=username) }}" method="POST" style="display:inline;">
                                     <button type="submit" class="delete-btn">Delete</button>
                                 </form>
-                            </td>                       
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
             <a href="{{ url_for('add_doctor') }}" class="back-button">Add New Doctor</a>
         </div>
-
+    
         <!-- Manage Head Nurses Section -->
         <div class="card">
             <h2>Manage Head Nurses</h2>
-
-
-            <div class="card">
-                <h3>Head Nurses</h3>
-                <table class="table">
-                    <thead>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nurse Name</th>
+                        <th>Username</th>
+                        <th>District</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for username, nurse in nurses.items() %}
                         <tr>
-                            <th>Nurse Name</th>
-                            <th>Username</th>
-                            <th>Actions</th>
+                            <td>{{ nurse.name }}</td>
+                            <td>{{ username }}</td>
+                            <td>{{ nurse.district or "Not Assigned" }}</td>
+                            <td>
+                                <a href="{{ url_for('profile', username=username) }}">View</a> |
+                                <form method="POST" action="{{ url_for('delete_nurse', username=username) }}" style="display:inline;">
+                                    <button type="submit" class="delete-btn">Delete</button>
+                                </form>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        {% for username, nurse in nurses.items() %}
-                            <tr>
-                                <td>{{ nurse.name }}</td>
-                                <td>{{ username }}</td>
-                                <td>
-                                    <a href="{{ url_for('profile', username=username) }}">View</a> |
-                                    <form method="POST" action="{{ url_for('delete_nurse', username=username) }}" style="display:inline;">
-                                        <button type="submit" class="delete-btn">Delete</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr>
-                                <td colspan="3">No head nurses found.</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                    {% else %}
+                        <tr>
+                            <td colspan="4">No head nurses found.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
             <form method="POST" action="{{ url_for('manage_nurses') }}">
                 <button type="submit">Add Head Nurse</button>
             </form>
         </div>
-
+    
         <!-- Manage Patients Section -->
         <div class="card">
             <h2>Manage Patients</h2>
@@ -223,6 +222,7 @@
                         <th>Patient Name</th>
                         <th>Age</th>
                         <th>Gender</th>
+                        <th>District</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -232,6 +232,7 @@
                             <td>{{ patient.name }}</td>
                             <td>{{ patient.age }}</td>
                             <td>{{ patient.gender }}</td>
+                            <td>{{ patient.district or "Not Assigned" }}</td>
                             <td>
                                 <a href="{{ url_for('profile', username=username) }}">View Profile</a> |
                                 <a href="{{ url_for('edit_patient', username=username) }}">Edit</a> |
@@ -245,6 +246,7 @@
             </table>
             <a href="{{ url_for('register_patient') }}" class="back-button">Register New Patient</a>
         </div>
+    
 
         <!-- Upcoming Appointments Section -->
         <div class="card">
