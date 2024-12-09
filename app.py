@@ -266,7 +266,7 @@ def logout():
     return redirect(url_for('index'))
 
 @app.route('/dashboard', methods=['GET', 'POST'])
-def dashboard():    
+def dashboard():
     username = session.get('username')
     role = session.get('role')
 
@@ -279,26 +279,22 @@ def dashboard():
 
     # Admin dashboard
     if role == 'admin':
-        # Fetch only nurses from the users dictionary
         nurse_users = {uname: user for uname, user in users.items() if user.get('role') == 'head_nurse'}
-        
-        # Combine with the nurses dictionary to include nurse details
         nurses_data = {
             uname: {
-                **user,  # User fields from 'users'
-                **nurses.get(uname, {})  # Nurse details from 'nurses'
+                **user,
+                **nurses.get(uname, {})
             }
             for uname, user in nurse_users.items()
         }
-        
         context.update({
             'appointments': appointments,
             'nurses': nurses_data,
             'doctors': doctors,
-            'patients': patients
+            'patients': patients,
+            'hospitals': hospitals
         })
         return render_template('dashboard_admin.html', **context)
-
 
     # Doctor dashboard
     elif role == 'doctor':
@@ -307,31 +303,19 @@ def dashboard():
             flash('Doctor not found!')
             return redirect(url_for('index'))
 
+        # Doctor sees appointments for their district
+        doctor_district = doctor.get('district')
         doctor_appointments = [
-            appt for appt in appointments.values() if appt['doctor'] == username
+            appt for appt in appointments.values()
+            if appt['doctor'] == username and patients[appt['patient']].get('district') == doctor_district
         ]
-
-        # Fetch all patients for the dropdown list
-        patient_usernames = [
-            {'username': username, 'name': patient['name']}
-            for username, patient in patients.items() if patient.get('covid',False)
-        ]
-
-
-        for appt in doctor_appointments:
-            patient = patients.get(appt['patient'])
-            if patient:
-                appt['patient_name'] = patient['name']
-                appt['patient_covid'] = patient.get('covid', 'False')
-                appt['patient_notes'] = patient.get('note', '')
 
         context.update({
             'doctor': doctor,
             'appointments': doctor_appointments,
-            'patients_list': patient_usernames,
-            'patients':patients,
-            'hospitals': hospitals
-            })
+            'patients': {uname: patient for uname, patient in patients.items() if patient.get('district') == doctor_district},
+            'hospitals': {hname: hospital for hname, hospital in hospitals.items() if hospital.get('district') == doctor_district}
+        })
         return render_template('dashboard_doctor.html', **context)
 
     # Patient dashboard
@@ -341,54 +325,51 @@ def dashboard():
             flash('Patient not found!')
             return redirect(url_for('index'))
 
+        patient_district = patient.get('district')
         patient_appointments = [
             appointments[appt_id] for appt_id in patient.get("appointments", []) if appt_id in appointments
         ]
 
-        for appt in patient_appointments:
-            doctor = doctors.get(appt['doctor'])
-            if doctor:
-                appt['doctor_name'] = doctor['name']
-            appt['covid_status'] = patient.get('covid', 'False')
-            appt['patient_notes'] = patient.get('note', '')
-
-        context.update({'patient': patient, 'appointments': patient_appointments})
+        context.update({
+            'patient': patient,
+            'appointments': patient_appointments,
+            'doctors': {uname: doctor for uname, doctor in doctors.items() if doctor.get('district') == patient_district}
+        })
         return render_template('dashboard_patient.html', **context)
 
     # Head Nurse dashboard
     elif role == 'head_nurse':
-        nurse_appointments = []
+        nurse = nurses.get(username)
+        if not nurse:
+            flash('Nurse not found!')
+            return redirect(url_for('index'))
 
-        for appt_id, appt in appointments.items():
-            patient = patients.get(appt['patient'])
-            doctor = doctors.get(appt['doctor'])
-            
-            # Ensure both patient and doctor exist for the appointment
-            if patient and doctor:
-                formatted_appt = {
-                    'id': appt_id,
-                    'patient_name': patient['name'],
-                    'doctor_name': doctor['name'],
-                    'date': appt.get('date', 'N/A'),
-                    'time': appt.get('time', 'N/A'),
-                    'covid_status': patient.get('covid', 'False'),
-                    'patient_notes': patient.get('note', ''),
-                    'patient_username': appt['patient']
-                }
-                nurse_appointments.append(formatted_appt)
-
-        # Fetch all patients for the dropdown list
-        patient_usernames = [
-            {'username': username, 'name': patient['name']}
-            for username, patient in patients.items() if patient.get('covid',False)
+        nurse_district = nurse.get('district')
+        nurse_appointments = [
+            {
+                'id': appt_id,
+                'patient_name': patients[appt['patient']]['name'],
+                'doctor_name': doctors[appt['doctor']]['name'],
+                'date': appt.get('date', 'N/A'),
+                'time': appt.get('time', 'N/A'),
+                'covid_status': patients[appt['patient']].get('covid', 'False'),
+                'patient_notes': patients[appt['patient']].get('note', '')
+            }
+            for appt_id, appt in appointments.items()
+            if patients[appt['patient']].get('district') == nurse_district
         ]
 
-        context.update({'appointments': nurse_appointments, 'hospitals': hospitals, 'patients': patient_usernames})
+        context.update({
+            'appointments': nurse_appointments,
+            'hospitals': {hname: hospital for hname, hospital in hospitals.items() if hospital.get('district') == nurse_district},
+            'patients': {uname: patient for uname, patient in patients.items() if patient.get('district') == nurse_district}
+        })
         return render_template('dashboard_head_nurse.html', **context)
 
     # Unauthorized role or access
     flash('Unauthorized access!')
     return redirect(url_for('index'))
+
 
 # Patient registration route
 @app.route('/register_patient', methods=['GET', 'POST'])
