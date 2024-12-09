@@ -11,6 +11,40 @@ users = {
     "headnurse1": {"password": generate_password_hash("nurse123"), "role": "head_nurse"}
 }
 
+# Districts
+districts = {
+    "district1": {
+        "name": "District 1",
+        "hospitals": ["hospital1"]
+    },
+    "district2": {
+        "name": "District 2",
+        "hospitals": ["hospital2"]
+    }
+}
+
+# Updated Doctors
+doctors = {
+    "doctor1": {
+        "name": "Smith",
+        "specialty": "Cardiology",
+        "note": "Senior Cardiologist.",
+        "hospital": "hospital1",
+        "district": "district1"
+    }
+}
+
+# Updated Nurses
+nurses = {
+    "headnurse1": {
+        "name": "Nurse Jane",
+        "note": "Head Nurse in the ICU.",
+        "hospital": "hospital1",
+        "district": "district1"
+    }
+}
+
+# Updated Patients
 patients = {
     "patient1": {
         "name": "John",
@@ -18,24 +52,12 @@ patients = {
         "gender": "Male",
         "appointments": [1],
         "note": "Patient requires regular check-ups.",
-        "covid": False  # COVID status for patient
+        "covid": False,
+        "hospital": None,  # Assigned during registration
+        "district": None   # Assigned during registration
     }
 }
 
-doctors = {
-    "doctor1": {
-        "name": "Smith",
-        "specialty": "Cardiology",
-        "note": "Senior Cardiologist."
-    }
-}
-
-nurses = {
-    "headnurse1": {
-        "name": "Nurse Jane",
-        "note": "Head Nurse in the ICU."
-    }
-}
 
 appointments = {
     1: {
@@ -257,9 +279,26 @@ def dashboard():
 
     # Admin dashboard
     if role == 'admin':
-        nurses = {uname: user for uname, user in users.items() if user.get('role') == 'head_nurse'}
-        context.update({'appointments': appointments, 'nurses': nurses,'doctors':doctors,'patients':patients})
+        # Fetch only nurses from the users dictionary
+        nurse_users = {uname: user for uname, user in users.items() if user.get('role') == 'head_nurse'}
+        
+        # Combine with the nurses dictionary to include nurse details
+        nurses_data = {
+            uname: {
+                **user,  # User fields from 'users'
+                **nurses.get(uname, {})  # Nurse details from 'nurses'
+            }
+            for uname, user in nurse_users.items()
+        }
+        
+        context.update({
+            'appointments': appointments,
+            'nurses': nurses_data,
+            'doctors': doctors,
+            'patients': patients
+        })
         return render_template('dashboard_admin.html', **context)
+
 
     # Doctor dashboard
     elif role == 'doctor':
