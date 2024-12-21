@@ -57,7 +57,7 @@ patients = {
         "gender": "Male",
         "appointments": [1],
         "note": "Patient requires regular check-ups.",
-        "covid": False,
+        "covid": True,
         "hospital": None,  # Assigned during registration
         "district": "district1",  # Assigned during registration
         "status": "in wait"  # New status field
@@ -385,8 +385,8 @@ def dashboard():
 
         context.update({
             'appointments': nurse_appointments,
-            'hospitals': {hname: hospital for hname, hospital in hospitals.items() if hospital.get('district') == nurse_district},
-            'patients': {uname: patient for uname, patient in patients.items() if patient.get('district') == nurse_district}
+            'hospitals': hospitals,  # Ensure hospitals are included in the context
+            'patients': {uname: patient for uname, patient in patients.items() if patient.get('district') == nurse_district and patient.get('covid', False)}
         })
         return render_template('dashboard_head_nurse.html', **context)
 

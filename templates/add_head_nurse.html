@@ -3,66 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Head Nurse</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Head Nurse Dashboard</title>
     <style>
         body {
             font-family: Arial, sans-serif;
+            margin: 20px;
             background-color: #f4f4f9;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
         }
-        h1 {
+
+        h1, h2 {
             color: #333;
-            margin-top: 20px;
         }
-        .container {
-            max-width: 800px;
+
+        table {
             width: 100%;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-collapse: collapse;
+            margin: 20px 0;
         }
-        form {
-            display: flex;
-            flex-direction: column;
-        }
-        label {
-            margin-top: 10px;
-            font-weight: bold;
-        }
-        input {
-            padding: 10px;
-            margin-top: 5px;
+
+        table th, table td {
             border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 8px;
+            text-align: left;
         }
+
+        table th {
+            background-color: #f2f2f2;
+        }
+
         button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background-color: #28a745;
+            background-color: #4CAF50;
             color: white;
             border: none;
-            border-radius: 4px;
+            padding: 10px;
+            border-radius: 5px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
         }
+
         button:hover {
-            background-color: #218838;
+            background-color: #45a049;
         }
-        a {
-            display: inline-block;
-            margin-top: 20px;
-            color: #007bff;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
+
         .flash-message {
             margin-top: 20px;
             padding: 10px;
@@ -82,46 +63,73 @@
     </style>
 </head>
 <body>
-    <h1>Add Head Nurse</h1>
-    <div class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash-message {{ category }}">{{ message }}</div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="messages">
+            {% for category, message in messages %}
+                <div class="flash-message {{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+
+    <h1>Welcome, Head Nurse!</h1>
+
+    <h2>All Appointments:</h2>
+    {% if appointments %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Patient</th>
+                    <th>Doctor</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>COVID Status</th>
+                    <th>Notes</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appt in appointments %}
+                    <tr>
+                        <td>{{ appt.patient_name }}</td>
+                        <td>{{ appt.doctor_name }}</td>
+                        <td>{{ appt.date }}</td>
+                        <td>{{ appt.time }}</td>
+                        <td>{{ appt.covid_status }}</td>
+                        <td>{{ appt.patient_notes }}</td>
+                        <td>
+                            <form method="GET" action="{{ url_for('edit_appointment', appointment_id=appt.id) }}">
+                                <button>Edit</button>
+                            </form>
+                        </td>
+                    </tr>
                 {% endfor %}
-            {% endif %}
-        {% endwith %}
-        <form method="POST">
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" required>
+            </tbody>
+        </table>
+    {% else %}
+        <p>No appointments to display.</p>
+    {% endif %}
 
-            <label for="name">Name:</label>
-            <input type="text" id="name" name="name" required>
+    <h2>Assign Bed to Patient</h2>
+    <form method="POST" action="{{ url_for('assign_bed') }}">
+        <label for="patient_username">Patient:</label>
+        <select id="patient_username" name="patient_username" required>
+            {% for uname, patient in patients.items() %}
+                <option value="{{ uname }}">{{ patient.name }} ({{ uname }})</option>
+            {% endfor %}
+        </select>
+        
+        <label for="hospital_name">Hospital:</label>
+        <select id="hospital_name" name="hospital_name" required>
+            {% for hospital_name, hospital_data in hospitals.items() %}
+                <option value="{{ hospital_name }}">{{ hospital_data['name'] }}</option>
+            {% endfor %}
+        </select>
+        
+        <button type="submit">Assign Bed</button>
+    </form>
 
-            <label for="position">Position:</label>
-            <input type="text" id="position" name="position" required>
-
-            <label for="hospital_name">Hospital Name:</label>
-            <input type="text" id="hospital_name" name="hospital_name" required>
-
-            <label for="hospital_address">Hospital Address:</label>
-            <input type="text" id="hospital_address" name="hospital_address" required>
-
-            <label for="telephone">Telephone:</label>
-            <input type="text" id="telephone" name="telephone" required>
-
-            <label for="email">Email:</label>
-            <input type="email" id="email" name="email" required>
-
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
-
-            <label for="repeat_password">Repeat Password:</label>
-            <input type="password" id="repeat_password" name="repeat_password" required>
-
-            <button type="submit">Register</button>
-        </form>
-        <a href="{{ url_for('assistant_dashboard') }}">Back to Dashboard</a>
-    </div>
+    <a href="{{ url_for('logout') }}">Logout</a>
 </body>
 </html>
