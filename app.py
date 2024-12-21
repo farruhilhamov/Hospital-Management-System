@@ -424,19 +424,46 @@ def register_patient():
 # Add doctor route
 @app.route('/add_doctor', methods=['GET', 'POST'])
 def add_doctor():
-    if session.get('role') != 'admin':
-        flash('You must be an admin to add doctors.')
+    if session.get('role') not in ['admin', 'assistant']:
+        flash('You must be an admin or assistant to add doctors.')
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
         username = request.form['username']
         name = request.form['name']
         specialty = request.form['specialty']
-        doctors[username] = {'name': name, 'specialty': specialty}
+        password = request.form['password']
+        repeat_password = request.form['repeat_password']
+
+        if not all([username, name, specialty, password, repeat_password]):
+            flash('All fields are required!')
+            return redirect(url_for('add_doctor'))
+
+        if password != repeat_password:
+            flash('Passwords do not match!')
+            return redirect(url_for('add_doctor'))
+
+        if username in users:
+            flash('Username already exists.')
+            return redirect(url_for('add_doctor'))
+
+        doctor_id = generate_unique_id('D')
+        while doctor_id in doctors:
+            doctor_id = generate_unique_id('D')
+
+        users[username] = {
+            'password': generate_password_hash(password),
+            'role': 'doctor'
+        }
+        doctors[username] = {
+            'name': name,
+            'specialty': specialty,
+            'id': doctor_id
+        }
         flash(f'Doctor {name} added successfully!')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('assistant_dashboard'))
+
     return render_template('add_doctor.html')
-    
 
 @app.route('/edit_doctor/<username>', methods=['GET', 'POST'])
 def edit_doctor(username):
@@ -525,29 +552,57 @@ def delete_patient(username):
 
 # Route to manage nurses (admin-only)
 # Add Nurse Route
-@app.route('/add_nurse', methods=['POST'])
+@app.route('/add_nurse', methods=['GET', 'POST'])
 def add_nurse():
-    if session.get('role') != 'admin':
-        flash('Only administrators can manage nurses.')
+    if session.get('role') not in ['admin', 'assistant']:
+        flash('You must be an admin or assistant to add head nurses.')
         return redirect(url_for('dashboard'))
 
-    username = request.form['username']
-    name = request.form['name']
-    specialty = request.form.get('specialty', '')
-    password = request.form['password']
+    if request.method == 'POST':
+        username = request.form['username']
+        name = request.form['name']
+        position = request.form['position']
+        hospital_name = request.form['hospital_name']
+        hospital_address = request.form['hospital_address']
+        telephone = request.form['telephone']
+        email = request.form['email']
+        password = request.form['password']
+        repeat_password = request.form['repeat_password']
 
-    # Check if the username already exists
-    if username in users:
-        flash(f'Username {username} already exists!')
-        return redirect(url_for('manage_nurses'))
+        if not all([username, name, position, hospital_name, hospital_address, telephone, email, password, repeat_password]):
+            flash('All fields are required!')
+            return redirect(url_for('add_nurse'))
 
-    # Add the new nurse
-    users[username] = {"password": generate_password_hash(password), "role": "head_nurse"}
-    nurses[username] = {"name": name, "specialty": specialty, "role": "head_nurse"}
-    flash(f'Head Nurse {name} added successfully!')
-    return redirect(url_for('manage_nurses'))
+        if password != repeat_password:
+            flash('Passwords do not match!')
+            return redirect(url_for('add_nurse'))
 
-# Delete Nurse Route
+        if username in users:
+            flash('Username already exists.')
+            return redirect(url_for('add_nurse'))
+
+        nurse_id = generate_unique_id('HN')
+        while nurse_id in nurses:
+            nurse_id = generate_unique_id('HN')
+
+        users[username] = {
+            'password': generate_password_hash(password),
+            'role': 'head_nurse'
+        }
+        nurses[username] = {
+            'name': name,
+            'position': position,
+            'hospital_name': hospital_name,
+            'hospital_address': hospital_address,
+            'telephone': telephone,
+            'email': email,
+            'id': nurse_id
+        }
+        flash(f'Head Nurse {name} added successfully!')
+        return redirect(url_for('assistant_dashboard'))
+
+    return render_template('add_head_nurse.html')
+
 @app.route('/delete_nurse/<username>', methods=['POST'])
 def delete_nurse(username):
     # Check if the nurse exists in the dictionary
@@ -865,52 +920,55 @@ def view_bed():
         flash("You are not assigned to any bed.")
         return redirect(url_for('dashboard'))
 
-@app.route('/assign_bed', methods=['POST'])
+@app.route('/assign_bed', methods=['GET', 'POST'])
 def assign_bed():
     username = session.get('username')
     role = session.get('role')
 
-    # Ensure the user is logged in and is a head nurse, doctor
-    if not username or role not in ('head_nurse','doctor'):
+    # Ensure the user is logged in and is a head nurse, doctor, or assistant
+    if not username or role not in ('head_nurse', 'doctor', 'assistant'):
         flash('Unauthorized access!')
         return redirect(url_for('dashboard'))
 
-    # Get patient username and hospital from the form
-    patient_username = request.form.get('patient_username')
-    hospital_name = request.form.get('hospital_name')
+    if request.method == 'POST':
+        # Get patient username and hospital from the form
+        patient_username = request.form.get('patient_username')
+        hospital_name = request.form.get('hospital_name')
 
-    # Validate patient username
-    if not patient_username or patient_username not in patients:
-        flash("Invalid patient username.")
+        # Validate patient username
+        if not patient_username or patient_username not in patients:
+            flash("Invalid patient username.")
+            return redirect(url_for('assign_bed'))
+
+        patient = patients[patient_username]
+
+        # Check if the patient has COVID
+        if not patient.get('covid', False):
+            flash(f"Cannot assign bed to {patient_username}: COVID status is False.")
+            return redirect(url_for('assign_bed'))
+
+        # Validate hospital name
+        if not hospital_name or hospital_name not in hospitals:
+            flash("Invalid hospital name.")
+            return redirect(url_for('assign_bed'))
+
+        hospital = hospitals[hospital_name]
+
+        # Try to assign the first available bed
+        try:
+            bed_index = hospital['beds'].index(None)  # Find the first unoccupied bed
+            hospital['beds'][bed_index] = patient_username  # Assign the bed to the patient
+            flash(f"Bed {bed_index + 1} assigned to {patient_username} in {hospital['name']}.")
+            print(f"Bed {bed_index + 1} assigned to {patient_username} in {hospital['name']}.")
+
+        except ValueError:  # If no beds are available
+            flash(f"No available beds in {hospital['name']}.")
+            return redirect(url_for('assign_bed'))
+
+        # Redirect back to the dashboard after successful assignment
         return redirect(url_for('dashboard'))
 
-    patient = patients[patient_username]
-
-    # Check if the patient has COVID
-    if not patient.get('covid', False):
-        flash(f"Cannot assign bed to {patient_username}: COVID status is False.")
-        return redirect(url_for('dashboard'))
-
-    # Validate hospital name
-    if not hospital_name or hospital_name not in hospitals:
-        flash("Invalid hospital name.")
-        return redirect(url_for('dashboard'))
-
-    hospital = hospitals[hospital_name]
-
-    # Try to assign the first available bed
-    try:
-        bed_index = hospital['beds'].index(None)  # Find the first unoccupied bed
-        hospital['beds'][bed_index] = patient_username  # Assign the bed to the patient
-        flash(f"Bed {bed_index + 1} assigned to {patient_username} in {hospital['name']}.")
-        print(f"Bed {bed_index + 1} assigned to {patient_username} in {hospital['name']}.")
-
-    except ValueError:  # If no beds are available
-        flash(f"No available beds in {hospital['name']}.")
-        return redirect(url_for('dashboard'))
-
-    # Redirect back to the dashboard after successful assignment
-    return redirect(url_for('dashboard'))
+    return render_template('assign_bed.html', hospitals=hospitals, patients=patients)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -949,6 +1007,13 @@ def register():
         return redirect(url_for('login'))
 
     return render_template('register.html', districts=districts)
+
+@app.route('/assistant_dashboard')
+def assistant_dashboard():
+    if session.get('role') != 'assistant':
+        flash('Unauthorized access!')
+        return redirect(url_for('dashboard'))
+    return render_template('dashboard_assistant.html')
 
 # Run the app
 if __name__ == '__main__':

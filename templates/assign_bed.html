@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Head Nurse</title>
+    <title>Assign Bed</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         body {
@@ -35,7 +35,7 @@
             margin-top: 10px;
             font-weight: bold;
         }
-        input {
+        input, select {
             padding: 10px;
             margin-top: 5px;
             border: 1px solid #ddd;
@@ -82,7 +82,7 @@
     </style>
 </head>
 <body>
-    <h1>Add Head Nurse</h1>
+    <h1>Assign Bed</h1>
     <div class="container">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -92,34 +92,17 @@
             {% endif %}
         {% endwith %}
         <form method="POST">
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" required>
-
-            <label for="name">Name:</label>
-            <input type="text" id="name" name="name" required>
-
-            <label for="position">Position:</label>
-            <input type="text" id="position" name="position" required>
+            <label for="patient_username">Patient Username:</label>
+            <input type="text" id="patient_username" name="patient_username" required>
 
             <label for="hospital_name">Hospital Name:</label>
-            <input type="text" id="hospital_name" name="hospital_name" required>
+            <select id="hospital_name" name="hospital_name" required>
+                {% for hospital_name, hospital in hospitals.items() %}
+                    <option value="{{ hospital_name }}">{{ hospital.name }}</option>
+                {% endfor %}
+            </select>
 
-            <label for="hospital_address">Hospital Address:</label>
-            <input type="text" id="hospital_address" name="hospital_address" required>
-
-            <label for="telephone">Telephone:</label>
-            <input type="text" id="telephone" name="telephone" required>
-
-            <label for="email">Email:</label>
-            <input type="email" id="email" name="email" required>
-
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
-
-            <label for="repeat_password">Repeat Password:</label>
-            <input type="password" id="repeat_password" name="repeat_password" required>
-
-            <button type="submit">Register</button>
+            <button type="submit">Assign Bed</button>
         </form>
         <a href="{{ url_for('assistant_dashboard') }}">Back to Dashboard</a>
     </div>
