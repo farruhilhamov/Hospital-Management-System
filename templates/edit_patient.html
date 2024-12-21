@@ -90,6 +90,16 @@
             <option value="False" {% if not patient['covid'] %}selected{% endif %}>Negative</option>
         </select><br>
 
+        <label for="status">Status:</label>
+        <select id="status" name="status" required>
+            <option value="in wait" {% if patient['status'] == 'in wait' %}selected{% endif %}>In Wait</option>
+            <option value="accepted" {% if patient['status'] == 'accepted' %}selected{% endif %}>Accepted</option>
+            <option value="negative" {% if patient['status'] == 'negative' %}selected{% endif %}>Negative</option>
+            <option value="positive" {% if patient['status'] == 'positive' %}selected{% endif %}>Positive</option>
+            <option value="healthy" {% if patient['status'] == 'healthy' %}selected{% endif %}>Healthy</option>
+            <option value="dead" {% if patient['status'] == 'dead' %}selected{% endif %}>Dead</option>
+        </select><br>
+
         <button type="submit">Save Changes</button>
     </form>
 

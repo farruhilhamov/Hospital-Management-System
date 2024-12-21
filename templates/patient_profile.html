@@ -99,6 +99,7 @@
         <p><strong>Contact:</strong> {{ user.phone }}</p>
         <p><strong>Address:</strong> {{ user.address }}</p>
         <p><strong>Medical History:</strong> {{ user.medical_history or "No history available" }}</p>
+        <p><strong>Status:</strong> {{ user.status }}</p>
     </div>
 
     <!-- Role-Specific Actions -->
@@ -119,16 +120,25 @@
                         <option value="True" {% if covid_status == 'True' %}selected{% endif %}>Positive</option>
                         <option value="False" {% if covid_status == 'False' %}selected{% endif %}>Negative</option>
                     </select><br><br>
+
+                    <label for="status">Status:</label>
+                    <select id="status" name="status" required>
+                        <option value="in wait" {% if user.status == 'in wait' %}selected{% endif %}>In Wait</option>
+                        <option value="accepted" {% if user.status == 'accepted' %}selected{% endif %}>Accepted</option>
+                        <option value="negative" {% if user.status == 'negative' %}selected{% endif %}>Negative</option>
+                        <option value="positive" {% if user.status == 'positive' %}selected{% endif %}>Positive</option>
+                        <option value="healthy" {% if user.status == 'healthy' %}selected{% endif %}>Healthy</option>
+                        <option value="dead" {% if user.status == 'dead' %}selected{% endif %}>Dead</option>
+                    </select><br><br>
                 
                     <button type="submit">Save Changes</button>
                 </form>                
                 
                 <form method="POST" action="{{ url_for('finish_appointment', appointment_id=appt['id']) }}">
-                    <button type="submit", style="background-color: rgb(211, 45, 122);">Finish Appointment</button>
+                    <button type="submit" style="background-color: rgb(211, 45, 122);">Finish Appointment</button>
                 </form>
                 {% endif %}
             </li>
-            
             {% endfor %}
         </ul>
         {% elif session['role'] == 'head_nurse' %}
@@ -143,21 +153,21 @@
         <ul>
             <li><a href="{{ url_for('manage_users') }}">Manage Users</a></li>
         </ul>
-{% elif session['role'] == 'patient' %}
-<h3>Patient Actions</h3>
-<ul>
-    <li><a href="{{ url_for('schedule_appointment') }}">Schedule a New Appointment</a></li>
-    <li>Upcoming Appointments:</li>
-    <ul>
-        {% for appt in appointments %}
-        <li>
-            {{ appt['date'] }} at {{ appt['time'] }} with Dr. {{ appt['doctor'] }}
-            <a href="{{ url_for('view_appointment', appointment_id=appt['id']) }}">View Details</a>
-        </li>
-        {% endfor %}
-    </ul>
-</ul>
-{% endif %}
+        {% elif session['role'] == 'patient' %}
+        <h3>Patient Actions</h3>
+        <ul>
+            <li><a href="{{ url_for('schedule_appointment') }}">Schedule a New Appointment</a></li>
+            <li>Upcoming Appointments:</li>
+            <ul>
+                {% for appt in appointments %}
+                <li>
+                    {{ appt['date'] }} at {{ appt['time'] }} with Dr. {{ appt['doctor'] }}
+                    <a href="{{ url_for('view_appointment', appointment_id=appt['id']) }}">View Details</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </ul>
+        {% endif %}
     </div>
 
     <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>

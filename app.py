@@ -54,7 +54,8 @@ patients = {
         "note": "Patient requires regular check-ups.",
         "covid": False,
         "hospital": None,  # Assigned during registration
-        "district": "district1"   # Assigned during registration
+        "district": "district1",  # Assigned during registration
+        "status": "in wait"  # New status field
     }
 }
 
@@ -125,6 +126,7 @@ def profile(username):
             "nurses": nurses,
             "notes": user.get('note', ''),
             "covid_status": user.get('covid', 'False'),
+            "status": user.get('status', 'in wait')
         }
 
         # Fetch all appointments if user is a patient
@@ -153,17 +155,19 @@ def profile(username):
             ],
             "notes": user.get('note', ''),
             "covid_status": user.get('covid', 'False'),
+            "status": user.get('status', 'in wait')
         }
 
-        # Handle doctor POST request to update notes and covid status
+        # Handle doctor POST request to update notes, covid status, and patient status
         if request.method == 'POST' and role == 'doctor' and username in patients:
             note = request.form.get('note')
             covid_status = request.form.get('covid')
+            status = request.form.get('status')
 
             # Debugging: Print the values received
-            print(f"Received Note: {note}, Received COVID Status: {covid_status}")
+            print(f"Received Note: {note}, Received COVID Status: {covid_status}, Received Status: {status}")
 
-            # Update the patient's notes and COVID status
+            # Update the patient's notes, COVID status, and status
             if note:
                 user['note'] = note
 
@@ -172,6 +176,10 @@ def profile(username):
                 # Debugging: Ensure the value of covid_status is correct
                 print(f"Updated COVID Status: {covid_status}")
                 user['covid'] = covid_status == 'True'  # Convert to boolean
+
+            # Update the patient's status
+            if status in ['in wait', 'accepted', 'negative', 'positive', 'healthy', 'dead']:
+                user['status'] = status
 
             flash(f'Patient {username} updated successfully!', 'success')
             return redirect(url_for('profile', username=username))
@@ -191,6 +199,7 @@ def profile(username):
             doctors=doctors,
             notes=user.get('note', ''),
             covid_status=user.get('covid', 'False'),
+            status=user.get('status', 'in wait')
         )
 
     # Head nurses can view patient details and appointments related to the user
@@ -204,13 +213,13 @@ def profile(username):
             appointments=nurse_appointments,
             notes=user.get('note', ''),
             covid_status=user.get('covid', 'False'),
+            status=user.get('status', 'in wait')
         )
 
     # Handle unauthorized access
     flash('Unauthorized access to this profile.')
     return redirect(url_for('dashboard'))
 
-# Function to handle viewing patient details (for doctors, nurses)
 @app.route('/patient_details/<username>', methods=['GET'])
 def patient_details(username):
     user = patients.get(username)
@@ -234,6 +243,7 @@ def patient_details(username):
             ],
             "notes": user.get('note', ''),
             "covid_status": user.get('covid', 'False'),
+            "status": user.get('status', 'in wait')
         }
         return render_template('patient_profile.html', **patient_data)
 
@@ -357,7 +367,8 @@ def dashboard():
                 'date': appt.get('date', 'N/A'),
                 'time': appt.get('time', 'N/A'),
                 'covid_status': patients[appt['patient']].get('covid', 'False'),
-                'patient_notes': patients[appt['patient']].get('note', '')
+                'patient_notes': patients[appt['patient']].get('note', ''),
+                'patient_status': patients[appt['patient']].get('status', 'in wait')  # Include patient status
             }
             for appt_id, appt in appointments.items()
             if patients[appt['patient']].get('district') == nurse_district
@@ -461,6 +472,7 @@ def edit_patient(username):
         patient['age'] = request.form['age']
         patient['gender'] = request.form['gender']
         patient['note'] = request.form['note']
+        patient['status'] = request.form['status']
         
         # Update COVID status only if the field is provided and is "True" or "False"
         if 'covid' in request.form:
@@ -475,7 +487,7 @@ def edit_patient(username):
         return redirect(url_for('dashboard'))
 
     # If the request method is GET, render the form to edit the patient details
-    return render_template('edit_patient.html', patient=patient,hospitals=hospitals)
+    return render_template('edit_patient.html', patient=patient, hospitals=hospitals)
 
 @app.route('/delete_patient/<username>', methods=['POST'])
 def delete_patient(username):
