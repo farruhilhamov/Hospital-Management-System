@@ -89,15 +89,6 @@
 
         <form method="POST">
             <div class="form-group">
-                <label for="patient">Select Patient:</label>
-                <select name="patient" required>
-                    {% for username, patient in patients.items() %}
-                        <option value="{{ username }}">{{ patient.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="form-group">
                 <label for="doctor">Select Doctor:</label>
                 <select name="doctor" required>
                     {% for username, doctor in doctors.items() %}

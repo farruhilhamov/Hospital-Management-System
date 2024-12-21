@@ -327,7 +327,11 @@ def dashboard():
 
         patient_district = patient.get('district')
         patient_appointments = [
-            appointments[appt_id] for appt_id in patient.get("appointments", []) if appt_id in appointments
+            {
+                **appointments[appt_id],
+                'doctor_name': doctors[appointments[appt_id]['doctor']]['name']
+            }
+            for appt_id in patient.get("appointments", []) if appt_id in appointments
         ]
 
         context.update({
@@ -877,7 +881,43 @@ def assign_bed():
     # Redirect back to the dashboard after successful assignment
     return redirect(url_for('dashboard'))
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if session.get('username'):
+        flash('You are already logged in.')
+        return redirect(url_for('index'))
 
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        name = request.form['name']
+        age = request.form['age']
+        gender = request.form['gender']
+        district = request.form['district']
+        hospital = request.form['hospital']
+
+        if username in users:
+            flash('Username already exists.')
+            return redirect(url_for('register'))
+
+        users[username] = {
+            'password': generate_password_hash(password),
+            'role': 'patient'
+        }
+        patients[username] = {
+            'name': name,
+            'age': age,
+            'gender': gender,
+            'appointments': [],
+            'note': '',
+            'covid': False,
+            'hospital': hospital,
+            'district': district
+        }
+        flash('Registration successful! Please log in.')
+        return redirect(url_for('login'))
+
+    return render_template('register.html', districts=districts)
 
 # Run the app
 if __name__ == '__main__':

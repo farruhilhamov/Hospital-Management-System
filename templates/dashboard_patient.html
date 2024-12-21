@@ -3,22 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Appointment</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">  <!-- Ensure you have the appropriate stylesheet -->
-</head>
-<body>
+    <title>Patient Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         /* Common Styles for Forms and Tables */
         .container {
             max-width: 900px;
             margin: 0 auto;
             padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
         .page-header {
             font-size: 24px;
             font-weight: bold;
             margin-bottom: 20px;
+            text-align: center;
+            color: #333;
         }
 
         .table {
@@ -30,6 +33,12 @@
         .table th, .table td {
             padding: 12px;
             border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        .table th {
+            background-color: #f4f4f9;
+            color: #333;
         }
 
         .form-group {
@@ -49,6 +58,9 @@
             font-size: 16px;
             border-radius: 4px;
             cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
         }
 
         .btn-primary {
@@ -63,11 +75,34 @@
             border: none;
         }
 
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+            border: none;
+        }
+
         .btn:hover {
             opacity: 0.8;
         }
-    </style>
 
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+
+        .back-link a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
 <div class="container">
     <h1 class="page-header">Patient Dashboard</h1>
 
@@ -86,7 +121,7 @@
             <tbody>
                 {% for appointment in appointments %}
                     <tr>
-                        <td>{{ appointment['doctor_name'] }}</td>
+                        <td>{{ doctors[appointment['doctor']]['name'] }}</td>
                         <td>{{ appointment['date'] }}</td>
                         <td>{{ appointment['time'] }}</td>
                         <td>
@@ -105,9 +140,9 @@
 
     <!-- Button to schedule a new appointment -->
     <div>
-        <a href="{{ url_for('view_bed') }}">View Bed</a>
+        <a href="{{ url_for('view_bed') }}" class="btn btn-secondary">View Bed</a>
         <a href="{{ url_for('schedule_appointment') }}" class="btn btn-success">Schedule New Appointment</a>
-        <a href="{{ url_for('logout') }}">Logout</a>
+        <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
     </div>
 </div>
 </body>
