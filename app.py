@@ -1,6 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+import random
+import string
+
 
 # Data structures
 
@@ -8,7 +11,9 @@ users = {
     "admin": {"password": generate_password_hash("admin123"), "role": "admin"},
     "doctor1": {"password": generate_password_hash("doctor123"), "role": "doctor"},
     "patient1": {"password": generate_password_hash("patient123"), "role": "patient"},
-    "headnurse1": {"password": generate_password_hash("nurse123"), "role": "head_nurse"}
+    "headnurse1": {"password": generate_password_hash("nurse123"), "role": "head_nurse"},
+    "assistant1": {"password": generate_password_hash("assistant123"), "role": "assistant"}
+
 }
 
 # Districts
@@ -103,6 +108,10 @@ def not_found(error):
     """This function returns error response template for users"""
     flash('The requested resource was not found.')
     return redirect(url_for('dashboard'))
+
+def generate_unique_id(prefix, length=10):
+    return prefix + ''.join(random.choices(string.digits, k=length))
+
 
 @app.route('/user/<username>', methods=['GET', 'POST'])
 def profile(username):
@@ -381,6 +390,15 @@ def dashboard():
         })
         return render_template('dashboard_head_nurse.html', **context)
 
+    # Assistant dashboard
+    elif role == 'assistant':
+        context.update({
+            'doctors': doctors,
+            'nurses': nurses,
+            'hospitals': hospitals
+        })
+        return render_template('dashboard_assistant.html', **context)
+
     # Unauthorized role or access
     flash('Unauthorized access!')
     return redirect(url_for('index'))
@@ -418,6 +436,7 @@ def add_doctor():
         flash(f'Doctor {name} added successfully!')
         return redirect(url_for('dashboard'))
     return render_template('add_doctor.html')
+    
 
 @app.route('/edit_doctor/<username>', methods=['GET', 'POST'])
 def edit_doctor(username):
