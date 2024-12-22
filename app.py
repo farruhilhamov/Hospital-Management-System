@@ -28,6 +28,14 @@ districts = {
     }
 }
 
+# Assistants data structure
+assistants = {
+    "assistant1": {
+        "name": "Assistant One",
+        "hospital": "hospital1"
+    }
+}
+
 # Updated Doctors
 doctors = {
     "doctor1": {
@@ -306,9 +314,18 @@ def dashboard():
             }
             for uname, user in nurse_users.items()
         }
+        assistant_users = {uname: user for uname, user in users.items() if user.get('role') == 'assistant'}
+        assistants_data = {
+            uname: {
+                **user,
+                **assistants.get(uname, {})
+            }
+            for uname, user in assistant_users.items()
+        }
         context.update({
             'appointments': appointments,
             'nurses': nurses_data,
+            'assistants': assistants_data,
             'doctors': doctors,
             'patients': patients,
             'hospitals': hospitals
@@ -1014,6 +1031,57 @@ def assistant_dashboard():
         flash('Unauthorized access!')
         return redirect(url_for('dashboard'))
     return render_template('dashboard_assistant.html')
+
+@app.route('/delete_assistant/<username>', methods=['POST'])
+def delete_assistant(username):
+    # Check if the assistant exists in the dictionary
+    assistant = assistants.get(username)
+    if not assistant:
+        flash(f'Assistant with username {username} not found!', 'error')
+        return redirect(url_for('dashboard'))
+
+    # Delete the assistant from the 'assistants' dictionary
+    del assistants[username]
+    if username in users:
+        del users[username]
+    flash(f'Assistant {assistant["name"]} deleted successfully!', 'success')
+
+    # Redirect back to the dashboard
+    return redirect(url_for('dashboard'))
+
+@app.route('/manage_assistants', methods=['GET', 'POST'])
+def manage_assistants():
+    if session.get('role') != 'admin':
+        flash('Only administrators can access this page.')
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        # Get form data for new assistant
+        username = request.form.get('username')
+        name = request.form.get('name')
+        hospital = request.form.get('hospital')
+        password = request.form.get('password')
+
+        # Validate input
+        if not username or not name or not hospital or not password:
+            flash('All fields are required!')
+            return redirect(url_for('manage_assistants'))
+
+        # Check if the username exists
+        if username in users:
+            flash(f'Username {username} already exists!')
+            return redirect(url_for('manage_assistants'))
+
+        # Add the new assistant to the users and assistants dictionary
+        users[username] = {"password": generate_password_hash(password), "role": "assistant"}
+        assistants[username] = {"name": name, "hospital": hospital}
+        flash(f'Assistant {name} added successfully!')
+        return redirect(url_for('manage_assistants'))
+
+    # For GET request, just render the page with existing assistants
+    return render_template('manage_assistants.html', assistants=assistants, hospitals=hospitals)
+
+
 
 # Run the app
 if __name__ == '__main__':
