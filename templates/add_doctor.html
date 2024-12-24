@@ -35,7 +35,7 @@
             margin-top: 10px;
             font-weight: bold;
         }
-        input {
+        input, select {
             padding: 10px;
             margin-top: 5px;
             border: 1px solid #ddd;
@@ -101,8 +101,27 @@
             <label for="specialty">Specialty:</label>
             <input type="text" id="specialty" name="specialty" required>
 
+            <label for="district_id">District:</label>
+            <select id="district_id" name="district_id" required>
+                {% for district in districts %}
+
+                    <option value="{{ district.id }}">{{ district.name }}</option>
+
+                {% endfor %}
+
+            </select>
+
+            <label for="hospital_id">Hospital:</label>
+            <select id="hospital_id" name="hospital_id" required>
+                {% for hospital in hospitals %}
+                    <option value="{{ hospital.id }}">{{ hospital.name }}</option>
+                {% endfor %}
+            </select>
+            
             <label for="password">Password:</label>
             <input type="password" id="password" name="password" required>
+
+
 
             <label for="repeat_password">Repeat Password:</label>
             <input type="password" id="repeat_password" name="repeat_password" required>

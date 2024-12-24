@@ -549,8 +549,8 @@ def add_doctor():
             'password': request.form['password'],
             'repeat_password': request.form['repeat_password'],
             'note': request.form.get('note', ''),
-            'hospital_id': int(request.form['hospital_id']),
-            'district_id': int(request.form['district_id'])
+            'hospital_id': request.form.get('hospital_id'),
+            'district_id': request.form.get('district_id')
         }
 
         if not all([data['username'], data['name'], data['specialty'], data['password'], data['repeat_password'], data['hospital_id'], data['district_id']]):
@@ -571,7 +571,7 @@ def add_doctor():
             role='doctor'
         )
         doctor = Doctor(
-            username=data['username'],
+            username=data['username'],  # Add username to Doctor model
             name=data['name'],
             specialty=data['specialty'],
             note=data['note'],

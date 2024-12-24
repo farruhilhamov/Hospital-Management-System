@@ -90,6 +90,7 @@ class Assistant(db.Model):
 class Doctor(db.Model):
     __tablename__ = 'doctors'
     id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
     name = db.Column(db.String(100), nullable=False)
     specialty = db.Column(db.String(100), nullable=False)
     note = db.Column(db.Text, nullable=True)
@@ -99,6 +100,7 @@ class Doctor(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'username': self.username,
             'name': self.name,
             'specialty': self.specialty,
             'note': self.note,
@@ -110,6 +112,7 @@ class Doctor(db.Model):
     def to_db(data):
         return Doctor(
             name=data['name'],
+            username=data['username'],
             specialty=data['specialty'],
             note=data.get('note'),
             hospital_id=data['hospital_id'],
