@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Hospital</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Edit Hospital</h1>
+        <form action="{{ url_for('edit_hospital', hospital_id=hospital.id) }}" method="POST">
+            <div class="form-group">
+                <label for="name">Hospital Name:</label>
+                <input type="text" id="name" name="name" value="{{ hospital.name }}" required>
+            </div>
+            <div class="form-group">
+                <label for="total_beds">Total Beds:</label>
+                <input type="number" id="total_beds" name="total_beds" value="{{ hospital.total_beds }}" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Hospital</button>
+        </form>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Hospital</title>
+    <title>Edit District</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         body {
@@ -35,7 +35,7 @@
             margin-top: 10px;
             font-weight: bold;
         }
-        input, select {
+        input {
             padding: 10px;
             margin-top: 5px;
             border: 1px solid #ddd;
@@ -82,7 +82,7 @@
     </style>
 </head>
 <body>
-    <h1>Add Hospital</h1>
+    <h1>Edit District</h1>
     <div class="container">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -92,20 +92,10 @@
             {% endif %}
         {% endwith %}
         <form method="POST">
-            <label for="name">Hospital Name:</label>
-            <input type="text" id="name" name="name" required>
+            <label for="name">District Name:</label>
+            <input type="text" id="name" name="name" value="{{ district.name }}" required>
 
-            <label for="total_beds">Total Beds:</label>
-            <input type="number" id="total_beds" name="total_beds" required>
-
-            <label for="district_id">District:</label>
-            <select id="district_id" name="district_id" required>
-                {% for district in districts %}
-                    <option value="{{ district.id }}">{{ district.name }}</option>
-                {% endfor %}
-            </select>
-
-            <button type="submit">Add Hospital</button>
+            <button type="submit">Update District</button>
         </form>
         <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
     </div>

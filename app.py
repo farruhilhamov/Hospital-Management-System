@@ -290,9 +290,9 @@ def dashboard():
         assistants_data = {assistant.username: assistant.to_dict() for assistant in Assistant.query.all()}
         doctors_data = {doctor.username: doctor.to_dict() for doctor in Doctor.query.all()}
         patients_data = {patient.username: patient.to_dict() for patient in Patient.query.all()}
-        hospitals_data = {hospital.name: hospital.to_dict() for hospital in Hospital.query.all()}
+        hospitals_data = {hospital.id: hospital.to_dict() for hospital in Hospital.query.all()}
         appointments_data = {appointment.id: appointment.to_dict() for appointment in Appointment.query.all()}
-        districts_data = {district.name: district.to_dict() for district in District.query.all()}
+        districts_data = {district.id: district.to_dict() for district in District.query.all()}
 
         context.update({
             'appointments': appointments_data,
@@ -401,19 +401,21 @@ def add_hospital():
     if request.method == 'POST':
         name = request.form['name']
         total_beds = request.form['total_beds']
+        district_id = request.form.get('district_id')
 
-        if not name or not total_beds:
+        if not name or not total_beds or not district_id:
             flash('All fields are required!')
             return redirect(url_for('add_hospital'))
 
-        hospital = Hospital(name=name, total_beds=total_beds, beds=[None for _ in range(int(total_beds))])
+        hospital = Hospital(name=name, total_beds=total_beds, district_id=district_id)
         db.session.add(hospital)
         db.session.commit()
 
         flash(f'Hospital {name} added successfully!')
         return redirect(url_for('dashboard'))
 
-    return render_template('add_hospital.html')
+    districts = District.query.all()
+    return render_template('add_hospital.html', districts=districts)
 
 @app.route('/add_district', methods=['GET', 'POST'])
 def add_district():
@@ -547,8 +549,8 @@ def add_doctor():
             'password': request.form['password'],
             'repeat_password': request.form['repeat_password'],
             'note': request.form.get('note', ''),
-            'hospital_id': request.form['hospital_id'],
-            'district_id': request.form['district_id']
+            'hospital_id': int(request.form['hospital_id']),
+            'district_id': int(request.form['district_id'])
         }
 
         if not all([data['username'], data['name'], data['specialty'], data['password'], data['repeat_password'], data['hospital_id'], data['district_id']]):
@@ -1180,7 +1182,7 @@ def manage_assistants():
         data = {
             'username': request.form.get('username'),
             'name': request.form.get('name'),
-            'hospital_id': request.form.get('hospital_id'),
+            'hospital_id': int(request.form.get('hospital_id')),
             'password': request.form.get('password'),
             'repeat_password': request.form.get('repeat_password')
         }
@@ -1204,7 +1206,11 @@ def manage_assistants():
             password=generate_password_hash(data['password']),
             role='assistant'
         )
-        assistant = Assistant.to_db(data)
+        assistant = Assistant(
+            username=data['username'],
+            name=data['name'],
+            hospital_id=data['hospital_id']
+        )
 
         db.session.add(user)
         db.session.add(assistant)
