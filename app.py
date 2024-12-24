@@ -1183,10 +1183,15 @@ def manage_assistants():
     
     if request.method == 'POST':
         # Get form data for new assistant
+        hospital_id = request.form.get('hospital_id')
+        if hospital_id is None:
+            flash('Hospital ID is required!')
+            return redirect(url_for('manage_assistants'))
+
         data = {
             'username': request.form.get('username'),
             'name': request.form.get('name'),
-            'hospital_id': int(request.form.get('hospital_id')),
+            'hospital_id': int(hospital_id),
             'password': request.form.get('password'),
             'repeat_password': request.form.get('repeat_password')
         }

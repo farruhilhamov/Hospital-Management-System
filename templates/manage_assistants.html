@@ -164,14 +164,17 @@
                 <input type="text" name="username" placeholder="Username" required>
                 <input type="text" name="name" placeholder="Name" required>
                 <input type="password" name="password" placeholder="Password" required>
-                <label for="hospital">Assign to Hospital:</label>
-                <select name="hospital" id="hospital" required>
-                    {% for hospital_name, hospital_data in hospitals.items() %}
-                        <option value="{{ hospital_name }}">{{ hospital_data.name }}</option>
+                <input type="password" name="repeat_password" placeholder="Repeat Password" required>
+                <label for="hospital_id">Assign to Hospital:</label>
+                <select name="hospital_id" id="hospital_id" required>
+                    {% for hospital_id, hospital in hospitals.items() %}
+                        <option value="{{ hospital_id }}">{{ hospital.name }}</option>
                     {% endfor %}
                 </select>
                 <button type="submit">Add Assistant</button>
+
             </form>
+
         </div>
     </div>
 </body>
