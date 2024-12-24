@@ -726,9 +726,11 @@ def add_nurse():
         db.session.commit()
 
         flash(f'Head Nurse {data["name"]} added successfully!')
-        return redirect(url_for('assistant_dashboard'))
+        return redirect(url_for('dashboard'))
 
-    return render_template('add_head_nurse.html')
+    hospitals = Hospital.query.all()
+    districts = District.query.all()
+    return render_template('add_head_nurse.html', hospitals=hospitals, districts=districts)
 
 @app.route('/delete_nurse/<username>', methods=['POST'])
 def delete_nurse(username):
@@ -794,8 +796,10 @@ def manage_nurses():
         return redirect(url_for('manage_nurses'))
 
     # For GET request, just render the page with existing nurses
-    nurses_data = {nurse.username: nurse.to_dict() for nurse in Nurse.query.all()}
-    return render_template('manage_nurses.html', nurses=nurses_data)
+    nurses_data = {nurse.id: nurse.to_dict() for nurse in Nurse.query.all()}
+    hospitals_data = {hospital.id: hospital.to_dict() for hospital in Hospital.query.all()}
+    districts_data = {district.id: district.to_dict() for district in District.query.all()}
+    return render_template('manage_nurses.html', nurses=nurses_data, hospitals=hospitals_data, districts=districts_data)
 
 @app.route('/edit_nurse/<username>', methods=['GET', 'POST'])
 def edit_nurse(username):

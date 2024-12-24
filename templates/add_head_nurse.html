@@ -133,3 +133,36 @@
     <a href="{{ url_for('logout') }}">Logout</a>
 </body>
 </html>
+<h2>Add Head Nurse</h2>
+<form method="POST" action="{{ url_for('add_nurse') }}">
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" required>
+    
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" required>
+    
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required>
+    
+    <label for="repeat_password">Repeat Password:</label>
+    <input type="password" id="repeat_password" name="repeat_password" required>
+    
+    <label for="note">Note:</label>
+    <textarea id="note" name="note"></textarea>
+    
+    <label for="hospital_id">Hospital:</label>
+    <select id="hospital_id" name="hospital_id" required>
+        {% for hospital in hospitals %}
+            <option value="{{ hospital.id }}">{{ hospital.name }}</option>
+        {% endfor %}
+    </select>
+    
+    <label for="district_id">District:</label>
+    <select id="district_id" name="district_id" required>
+        {% for district in districts %}
+            <option value="{{ district.id }}">{{ district.name }}</option>
+        {% endfor %}
+    </select>
+    
+    <button type="submit">Add Head Nurse</button>
+</form>

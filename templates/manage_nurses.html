@@ -114,14 +114,31 @@
                 <label for="username">Username:</label>
                 <input type="text" id="username" name="username" required>
 
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+
+                <label for="repeat_password">Repeat Password:</label>
+                <input type="password" id="repeat_password" name="repeat_password" required>
+
                 <label for="name">Name:</label>
                 <input type="text" id="name" name="name" required>
 
-                <label for="specialty">Specialty:</label>
-                <input type="text" id="specialty" name="specialty" required>
+                <label for="note">Note:</label>
+                <input type="text" id="note" name="note" required>
 
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
+                <label for="hospital_id">Hospital:</label>
+                <select id="hospital_id" name="hospital_id" required>
+                    {% for hospital_id, hospital in hospitals.items() %}
+                        <option value="{{ hospital_id }}">{{ hospital.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <label for="district_id">District:</label>
+                <select id="district_id" name="district_id" required>
+                    {% for district_id, district in districts.items() %}
+                        <option value="{{ district_id }}">{{ district.name }}</option>
+                    {% endfor %}
+                </select>
 
                 <button type="submit">Add Head Nurse</button>
             </form>
@@ -132,10 +149,10 @@
             <h2>Existing Head Nurses</h2>
             {% if nurses %}
                 <ul>
-                    {% for username, nurse in nurses.items() %}
+                    {% for nurse_id, nurse in nurses.items() %}
                         <li>
-                            <span>{{ nurse.name }} - {{ nurse.username }}</span>
-                            <form method="POST" action="{{ url_for('delete_nurse', username=username) }}" style="display:inline;">
+                            <span>{{ nurse.name }} - {{ nurse.note }}</span>
+                            <form method="POST" action="{{ url_for('delete_nurse', username=nurse.username) }}" style="display:inline;">
                                 <button type="submit">Delete</button>
                             </form>
                         </li>

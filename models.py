@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+# from datetime import datetime
 
 db = SQLAlchemy()
 
@@ -71,12 +71,14 @@ class Assistant(db.Model):
     __tablename__ = 'assistants'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    username = db.Column(db.String(50), unique=True, nullable=False)
     hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id'), nullable=False)
 
     def to_dict(self):
         return {
             'id': self.id,
             'name': self.name,
+            'username': self.username,
             'hospital_id': self.hospital_id
         }
 
@@ -84,6 +86,7 @@ class Assistant(db.Model):
     def to_db(data):
         return Assistant(
             name=data['name'],
+            username=data['username'],
             hospital_id=data['hospital_id']
         )
 
@@ -122,6 +125,7 @@ class Doctor(db.Model):
 class Nurse(db.Model):
     __tablename__ = 'nurses'
     id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
     name = db.Column(db.String(100), nullable=False)
     note = db.Column(db.Text, nullable=True)
     hospital_id = db.Column(db.Integer, db.ForeignKey('hospitals.id'), nullable=False)
@@ -131,6 +135,7 @@ class Nurse(db.Model):
         return {
             'id': self.id,
             'name': self.name,
+            'username': self.username,
             'note': self.note,
             'hospital_id': self.hospital_id,
             'district_id': self.district_id
@@ -140,9 +145,33 @@ class Nurse(db.Model):
     def to_db(data):
         return Nurse(
             name=data['name'],
+            username=data['username'],
             note=data.get('note'),
             hospital_id=data['hospital_id'],
             district_id=data['district_id']
+        )
+
+class Appointment(db.Model):
+    __tablename__ = 'appointments'
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.DateTime, nullable=False)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
+    doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id'), nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'date': self.date,
+            'patient_id': self.patient_id,
+            'doctor_id': self.doctor_id
+        }
+
+    @staticmethod
+    def to_db(data):
+        return Appointment(
+            date=data['date'],
+            patient_id=data['patient_id'],
+            doctor_id=data['doctor_id']
         )
 
 class Patient(db.Model):
@@ -160,6 +189,7 @@ class Patient(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'username': self.username,
             'name': self.name,
             'age': self.age,
             'gender': self.gender,
@@ -173,6 +203,7 @@ class Patient(db.Model):
     @staticmethod
     def to_db(data):
         return Patient(
+            username=data['username'],
             name=data['name'],
             age=data['age'],
             gender=data['gender'],
@@ -181,33 +212,4 @@ class Patient(db.Model):
             status=data.get('status', 'in wait'),
             hospital_id=data.get('hospital_id'),
             district_id=data['district_id']
-        )
-
-class Appointment(db.Model):
-    __tablename__ = 'appointments'
-    id = db.Column(db.Integer, primary_key=True)
-    patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
-    doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id'), nullable=False)
-    date = db.Column(db.Date, nullable=False)
-    time = db.Column(db.Time, nullable=False)
-    status = db.Column(db.String(50), default='scheduled')
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'patient_id': self.patient_id,
-            'doctor_id': self.doctor_id,
-            'date': self.date.strftime('%Y-%m-%d'),
-            'time': self.time.strftime('%H:%M:%S'),
-            'status': self.status
-        }
-
-    @staticmethod
-    def to_db(data):
-        return Appointment(
-            patient_id=data['patient_id'],
-            doctor_id=data['doctor_id'],
-            date=datetime.strptime(data['date'], '%Y-%m-%d').date(),
-            time=datetime.strptime(data['time'], '%H:%M:%S').time(),
-            status=data.get('status', 'scheduled')
         )
