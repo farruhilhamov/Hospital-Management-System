@@ -17,6 +17,14 @@ class User(db.Model):
             'role': self.role
         }
 
+    @staticmethod
+    def to_db(data):
+        return User(
+            username=data['username'],
+            password=data['password'],
+            role=data['role']
+        )
+
 class District(db.Model):
     __tablename__ = 'districts'
     id = db.Column(db.Integer, primary_key=True)
@@ -29,6 +37,12 @@ class District(db.Model):
             'name': self.name,
             'hospitals': [hospital.to_dict() for hospital in self.hospitals]
         }
+
+    @staticmethod
+    def to_db(data):
+        return District(
+            name=data['name']
+        )
 
 class Hospital(db.Model):
     __tablename__ = 'hospitals'
@@ -45,6 +59,14 @@ class Hospital(db.Model):
             'district_id': self.district_id
         }
 
+    @staticmethod
+    def to_db(data):
+        return Hospital(
+            name=data['name'],
+            total_beds=data['total_beds'],
+            district_id=data['district_id']
+        )
+
 class Assistant(db.Model):
     __tablename__ = 'assistants'
     id = db.Column(db.Integer, primary_key=True)
@@ -57,6 +79,13 @@ class Assistant(db.Model):
             'name': self.name,
             'hospital_id': self.hospital_id
         }
+
+    @staticmethod
+    def to_db(data):
+        return Assistant(
+            name=data['name'],
+            hospital_id=data['hospital_id']
+        )
 
 class Doctor(db.Model):
     __tablename__ = 'doctors'
@@ -77,6 +106,16 @@ class Doctor(db.Model):
             'district_id': self.district_id
         }
 
+    @staticmethod
+    def to_db(data):
+        return Doctor(
+            name=data['name'],
+            specialty=data['specialty'],
+            note=data.get('note'),
+            hospital_id=data['hospital_id'],
+            district_id=data['district_id']
+        )
+
 class Nurse(db.Model):
     __tablename__ = 'nurses'
     id = db.Column(db.Integer, primary_key=True)
@@ -93,6 +132,15 @@ class Nurse(db.Model):
             'hospital_id': self.hospital_id,
             'district_id': self.district_id
         }
+
+    @staticmethod
+    def to_db(data):
+        return Nurse(
+            name=data['name'],
+            note=data.get('note'),
+            hospital_id=data['hospital_id'],
+            district_id=data['district_id']
+        )
 
 class Patient(db.Model):
     __tablename__ = 'patients'
@@ -119,6 +167,19 @@ class Patient(db.Model):
             'district_id': self.district_id
         }
 
+    @staticmethod
+    def to_db(data):
+        return Patient(
+            name=data['name'],
+            age=data['age'],
+            gender=data['gender'],
+            note=data.get('note'),
+            covid=data.get('covid', False),
+            status=data.get('status', 'in wait'),
+            hospital_id=data.get('hospital_id'),
+            district_id=data['district_id']
+        )
+
 class Appointment(db.Model):
     __tablename__ = 'appointments'
     id = db.Column(db.Integer, primary_key=True)
@@ -137,3 +198,13 @@ class Appointment(db.Model):
             'time': self.time.strftime('%H:%M:%S'),
             'status': self.status
         }
+
+    @staticmethod
+    def to_db(data):
+        return Appointment(
+            patient_id=data['patient_id'],
+            doctor_id=data['doctor_id'],
+            date=datetime.strptime(data['date'], '%Y-%m-%d').date(),
+            time=datetime.strptime(data['time'], '%H:%M:%S').time(),
+            status=data.get('status', 'scheduled')
+        )
