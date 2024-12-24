@@ -292,6 +292,7 @@ def dashboard():
         patients_data = {patient.username: patient.to_dict() for patient in Patient.query.all()}
         hospitals_data = {hospital.name: hospital.to_dict() for hospital in Hospital.query.all()}
         appointments_data = {appointment.id: appointment.to_dict() for appointment in Appointment.query.all()}
+        districts_data = {district.name: district.to_dict() for district in District.query.all()}
 
         context.update({
             'appointments': appointments_data,
@@ -299,7 +300,8 @@ def dashboard():
             'assistants': assistants_data,
             'doctors': doctors_data,
             'patients': patients_data,
-            'hospitals': hospitals_data
+            'hospitals': hospitals_data,
+            'districts': districts_data
         })
         return render_template('dashboard_admin.html', **context)
 
@@ -390,7 +392,105 @@ def dashboard():
     flash('Unauthorized access!')
     return redirect(url_for('index'))
 
+@app.route('/add_hospital', methods=['GET', 'POST'])
+def add_hospital():
+    if session.get('role') != 'admin':
+        flash('Only administrators can add hospitals.')
+        return redirect(url_for('dashboard'))
 
+    if request.method == 'POST':
+        name = request.form['name']
+        total_beds = request.form['total_beds']
+
+        if not name or not total_beds:
+            flash('All fields are required!')
+            return redirect(url_for('add_hospital'))
+
+        hospital = Hospital(name=name, total_beds=total_beds, beds=[None for _ in range(int(total_beds))])
+        db.session.add(hospital)
+        db.session.commit()
+
+        flash(f'Hospital {name} added successfully!')
+        return redirect(url_for('dashboard'))
+
+    return render_template('add_hospital.html')
+
+@app.route('/add_district', methods=['GET', 'POST'])
+def add_district():
+    if session.get('role') != 'admin':
+        flash('Only administrators can add districts.')
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        name = request.form['name']
+
+        if not name:
+            flash('District name is required!')
+            return redirect(url_for('add_district'))
+
+        district = District(name=name)
+        db.session.add(district)
+        db.session.commit()
+
+        flash(f'District {name} added successfully!')
+        return redirect(url_for('dashboard'))
+
+    return render_template('add_district.html')
+
+@app.route('/edit_hospital/<int:hospital_id>', methods=['GET', 'POST'])
+def edit_hospital(hospital_id):
+    hospital = Hospital.query.get(hospital_id)
+    if not hospital:
+        flash(f'Hospital with ID {hospital_id} not found!', 'error')
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        hospital.name = request.form['name']
+        hospital.total_beds = request.form['total_beds']
+        db.session.commit()
+        flash(f'Hospital {hospital.name} updated successfully!', 'success')
+        return redirect(url_for('dashboard'))
+
+    return render_template('edit_hospital.html', hospital=hospital.to_dict())
+
+@app.route('/delete_hospital/<int:hospital_id>', methods=['POST'])
+def delete_hospital(hospital_id):
+    hospital = Hospital.query.get(hospital_id)
+    if not hospital:
+        flash(f'Hospital with ID {hospital_id} not found!', 'error')
+        return redirect(url_for('dashboard'))
+
+    db.session.delete(hospital)
+    db.session.commit()
+    flash(f'Hospital {hospital.name} deleted successfully!', 'success')
+    return redirect(url_for('dashboard'))
+
+@app.route('/edit_district/<int:district_id>', methods=['GET', 'POST'])
+def edit_district(district_id):
+    district = District.query.get(district_id)
+    if not district:
+        flash(f'District with ID {district_id} not found!', 'error')
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        district.name = request.form['name']
+        db.session.commit()
+        flash(f'District {district.name} updated successfully!', 'success')
+        return redirect(url_for('dashboard'))
+
+    return render_template('edit_district.html', district=district.to_dict())
+
+@app.route('/delete_district/<int:district_id>', methods=['POST'])
+def delete_district(district_id):
+    district = District.query.get(district_id)
+    if not district:
+        flash(f'District with ID {district_id} not found!', 'error')
+        return redirect(url_for('dashboard'))
+
+    db.session.delete(district)
+    db.session.commit()
+    flash(f'District {district.name} deleted successfully!', 'success')
+    return redirect(url_for('dashboard'))
 # Patient registration route
 @app.route('/register_patient', methods=['GET', 'POST'])
 def register_patient():
@@ -468,7 +568,14 @@ def add_doctor():
             password=generate_password_hash(data['password']),
             role='doctor'
         )
-        doctor = Doctor.to_db(data)
+        doctor = Doctor(
+            username=data['username'],
+            name=data['name'],
+            specialty=data['specialty'],
+            note=data['note'],
+            hospital_id=data['hospital_id'],
+            district_id=data['district_id']
+        )
 
         db.session.add(user)
         db.session.add(doctor)
@@ -477,7 +584,9 @@ def add_doctor():
         flash(f'Doctor {data["name"]} added successfully!')
         return redirect(url_for('assistant_dashboard'))
 
-    return render_template('add_doctor.html')
+    hospitals = Hospital.query.all()
+    districts = District.query.all()
+    return render_template('add_doctor.html', hospitals=hospitals, districts=districts)
 
 @app.route('/edit_doctor/<username>', methods=['GET', 'POST'])
 def edit_doctor(username):

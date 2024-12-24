@@ -328,3 +328,58 @@
     </div>
 </body>
 </html>
+<!-- Manage Districts Section -->
+<div class="card">
+    <h2>Manage Districts</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>District Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for district_id, district in districts.items() %}
+                <tr>
+                    <td>{{ district.name }}</td>
+                    <td>
+                        <a href="{{ url_for('edit_district', district_id=district_id) }}">Edit</a> |
+                        <form action="{{ url_for('delete_district', district_id=district_id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="delete-btn">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{{ url_for('add_district') }}" class="back-button">Add New District</a>
+</div>
+
+<!-- Manage Hospitals Section -->
+<div class="card">
+    <h2>Manage Hospitals</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Hospital Name</th>
+                <th>District</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for hospital_id, hospital in hospitals.items() %}
+                <tr>
+                    <td>{{ hospital.name }}</td>
+                    <td>{{ hospital.district }}</td>
+                    <td>
+                        <a href="{{ url_for('edit_hospital', hospital_id=hospital_id) }}">Edit</a> |
+                        <form action="{{ url_for('delete_hospital', hospital_id=hospital_id) }}" method="POST" style="display:inline;">
+                            <button type="submit" class="delete-btn">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{{ url_for('add_hospital') }}" class="back-button">Add New Hospital</a>
+</div></table></form></div>
